@@ -6,6 +6,7 @@ export function ExperienceSkillsSection() {
   // Parse the message string into an object
   let parsedData: any;
   const message = localStorage.getItem('profileAnalysis');
+  console.log(typeof message)
   try {
     parsedData = typeof message === 'string' ? JSON.parse(message) : message;
   } catch (error) {
@@ -25,7 +26,7 @@ export function ExperienceSkillsSection() {
   const experiences = Array.isArray(parsedData.Experience) ? parsedData.Experience : 
                       parsedData.Experience ? [parsedData.Experience] : ['No experience data available'];
   const education = parsedData.Education || [ {Degree: '', Institution: '', Year: '', CGPA: '' } ];
-  console.log(education[0].Degree);
+
   const courses = Array.isArray(parsedData.RelevantCourses) ? parsedData.RelevantCourses : 
                   parsedData.RelevantCourses ? [parsedData.RelevantCourses] : ['No relevant courses data available'];
   
@@ -48,7 +49,6 @@ export function ExperienceSkillsSection() {
   const getInitial = (name: string) => {
     return name ? name.charAt(0).toUpperCase() : '';
   };
-  
   // Format date to readable format
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
