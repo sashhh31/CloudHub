@@ -235,7 +235,7 @@ export function CareerForm() {
         method: 'POST',
         body: formData,
       });
-      router.push('/result');
+      
       
       const data = await response.json();
 
@@ -251,6 +251,8 @@ export function CareerForm() {
       }
       
       localStorage.setItem('profileAnalysis', data.analysis.analysis);
+
+router.push('/results');
       
       // Navigate to the result page
       
