@@ -58,8 +58,6 @@
     "pdf-parse": "^1.1.1",
     "pdf-viewer-reactjs": "^2.2.3",
     "pdfjs-dist": "^3.4.120",
-    "playwright": "^1.51.1",
-    "puppeteer": "^24.4.0",
     "react": "^19",
     "react-day-picker": "8.10.1",
     "react-dom": "^19",

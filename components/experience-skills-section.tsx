@@ -6,9 +6,9 @@ export function ExperienceSkillsSection() {
   // Parse the message string into an object
   let parsedData: any;
   const message = localStorage.getItem('profileAnalysis');
-  console.log(typeof message)
   try {
     parsedData = typeof message === 'string' ? JSON.parse(message) : message;
+    console.log(typeof message)
   } catch (error) {
     return (
       <section className="w-full py-12 md:py-24">
