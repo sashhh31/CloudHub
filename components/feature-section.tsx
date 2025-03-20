@@ -31,16 +31,21 @@ export function FeatureSection({ title, description, imageSrc, imageAlt, isImage
               </div>
             </div>
             <div>
-              <Button variant="ghost" className="flex items-center gap-2 text-white hover:text-[#e64a2a]">
-                <div className="w-8 h-8 bg-[#ff5631] rounded-full flex items-center justify-center">
-
+              <Button variant="ghost" className="flex items-center gap-2 text-[#ff5631] hover:text-[#e64a2a]">
                 <Play className="h-5 w-5 fill-current" />
-                </div>
-                <span className="text-black text-bold">See how it works</span>
+                <span>See how it works</span>
               </Button>
             </div>
           </div>
-         
+          <div className="flex items-center justify-center">
+            <Image
+              src={imageSrc || "/placeholder.svg"}
+              alt={imageAlt}
+              width={500}
+              height={500}
+              className="rounded-lg object-cover"
+            />
+          </div>
         </div>
       </div>
     </section>

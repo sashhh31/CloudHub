@@ -23,8 +23,8 @@ export function ProjectSection() {
                 </div>
               </div>
               <div className="items-end rounded-full border-none">
-                <img
-                  src="/group.png"
+                <Image
+                  src="/Group.png"
                   alt="Project dashboard"
                   width={800}
                   height={600}
