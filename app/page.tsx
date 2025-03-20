@@ -12,7 +12,7 @@ export default function Home() {
       <FeatureSection
         title="identify strengths and areas for improvement."
         description="Campsite has been instrumental in keeping designers aware of each others' work-in-progress in a way that was previously slowing us down. It's also one of the only channels where."
-        imageSrc="/frame.png"
+        imageSrc="/Frame.png"
         imageAlt="Team collaboration"
         isImageRight={true}
       />
