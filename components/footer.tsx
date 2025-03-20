@@ -9,7 +9,7 @@ export function Footer() {
       <div className="container px-4 md:px-6">
         <div className="grid gap-8 md:grid-cols-4">
           <div>
-            <Image src="/logo1.png" alt="Logo" width={80} height={80} />
+            <Image src="/Logo1.png" alt="Logo" width={80} height={80} />
           </div>
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Product</h3>
