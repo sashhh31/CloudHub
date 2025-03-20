@@ -85,7 +85,7 @@ export async function POST(request: Request) {
         if (!username) {
           return NextResponse.json({ error: 'Could not extract LinkedIn username' }, { status: 400 });
         }
-        apiKey= process.env.SCRAPPING_DOG_API_KEY
+      const apiKey= process.env.SCRAPPING_DOG_API_KEY
         const url = 'https://api.scrapingdog.com/linkedin/';
         const params = {
           api_key:apiKey ,
