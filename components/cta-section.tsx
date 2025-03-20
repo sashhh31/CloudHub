@@ -7,7 +7,7 @@ export function CtaSection() {
       <div className="container px-4 md:px-6">
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
           <div className="mb-4">
-          <Image src="/logo1.png" alt="Logo" width={80} height={80} />
+          <Image src="/Logo1.png" alt="Logo" width={80} height={80} />
 
           </div>
           <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
