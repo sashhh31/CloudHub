@@ -23,7 +23,7 @@ const HeroSection = () => {
 
       {/* Background Vector Image */}
       <Image
-        src="/vector.png"
+        src="/Vector.png"
         alt="Vector"
         width={1000}
         height={1000}
