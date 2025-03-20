@@ -2,10 +2,12 @@ import {  Mail, Phone } from "lucide-react"
 import React from 'react';
 import { parseProfileData } from "../utils/parseProfileData";
 import Link from "next/link";
+import { useProfile } from "@/context/ProfileContext";
 
 export function ProfileOverviewSection() {
-  const message: string = localStorage.getItem('profileAnalysis') || '';
-  let parsedData:any;
+  const { profileData } = useProfile();
+  const message: string = profileData?.analysis || '';
+  let parsedData: any;
   
   try {
     parsedData = parseProfileData(message);

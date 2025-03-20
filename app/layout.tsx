@@ -8,6 +8,7 @@ import {
   UserButton,
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { ProfileProvider } from '../context/ProfileContext';
 import './globals.css'
 import { Header } from '@/components/header'
 
@@ -33,6 +34,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
+    <ProfileProvider>
     <ClerkProvider>
       <html lang="en">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
@@ -41,5 +43,6 @@ export default function RootLayout({
         </body>
       </html>
     </ClerkProvider>
+    </ProfileProvider>
   )
 }

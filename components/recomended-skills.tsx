@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button"
+import { useProfile } from "@/context/ProfileContext";
 import Image from "next/image"
 import Link from "next/link";
-
-
+ 
 export function RecommendedSkillsSection() {
   try {
-    const message: string = localStorage.getItem('profileAnalysis') || '';
-    // Parse the message string into an object
+    const { profileData } = useProfile();
+    const message: string = profileData?.analysis || '';    // Parse the message string into an object
     const parsedData: any = JSON.parse(message);
     
     // Extract the recommended skills array

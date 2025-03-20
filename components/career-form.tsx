@@ -1,11 +1,11 @@
-"use client";
+"use client"
 import { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from '@clerk/clerk-react'
-import ResultPage from '@/app/result/page';
+import { useAuth } from '@clerk/clerk-react';
+import { useProfile } from '@/context/ProfileContext';
 
 export function CareerForm() {
   const [jobTitle, setJobTitle] = useState<string>('');
@@ -20,8 +20,9 @@ export function CareerForm() {
   const router = useRouter();
   const [pdfJsLoaded, setPdfJsLoaded] = useState<boolean>(false);
   const [inputMethod, setInputMethod] = useState<'linkedin' | 'file' | 'none'>('none');
+  const { setProfileData } = useProfile();
 
-  // Load PDF.js when component mounts
+
   const { isSignedIn, isLoaded } = useAuth();
   useEffect(() => {
     const script = document.createElement('script');
@@ -191,21 +192,17 @@ export function CareerForm() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Check authentication status using Clerk
     
-    // Wait for Clerk to load authentication data
     if (!isLoaded) {
       setIsLoading(true);
       return;
     }
     
-    // Redirect to sign-in if user is not authenticated
     if (!isSignedIn) {
       router.push('/sign-in');
       return;
     }
   
-    // Validate inputs (require either a LinkedIn URL or a file)
     if (!linkedinUrl && !file) {
       setError('Please enter a LinkedIn URL or upload a file');
       return;
@@ -236,7 +233,6 @@ export function CareerForm() {
         body: formData,
       });
       
-      
       const data = await response.json();
 
       if (!response.ok) {
@@ -245,17 +241,14 @@ export function CareerForm() {
         throw new Error(`Server error: ${errorText}`);
       }
   
-      console.log(data.analysis)
       if (!data.analysis) {
         throw new Error('No analysis data received from server');
       }
       
-      localStorage.setItem('profileAnalysis', data.analysis.analysis);
-
-router.push('/results');
+      // Update context instead of using localStorage directly
+      setProfileData({ analysis: data.analysis.analysis });
       
-      // Navigate to the result page
-      
+      router.push('/result');
     } catch (error) {
       console.error('Error processing data:', error);
       setError('Failed to process data: ' + (error instanceof Error ? error.message : 'Unknown error'));

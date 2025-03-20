@@ -1,65 +1,15 @@
 import React from 'react';
-
-interface ProfileData {
-  AIImpactAssessment?: {
-    Impact?: string;
-    [key: string]: any;
-  };
-  AIScore?: {
-    Total?: number;
-    High?: number;
-    Medium?: number;
-    Low?: number;
-  };
-  BasicProfileInformation?: {
-    Name?: string;
-    CurrentRole?: string;
-    Company?: string;
-    [key: string]: any;
-  };
-  BestAchievements?: string[];
-  CareerTrajectoryAnalysis?: string;
-  Education?: {
-    Degree?: string;
-    Institution?: string;
-    Year?: string;
-    [key: string]: any;
-  };
-  Experience?: Array<{
-    Title?: string;
-    Company?: string;
-    Dates?: string;
-    Location?: string;
-    [key: string]: any;
-  }>;
-  RecommendedCoursesOrSkillsToDevelop?: string[];
-  RelevantCourses?: string[];
-  RemarksAboutTheProfile?: string;
-  SkillGaps?: string | string[];
-  SkillsAssessment?: {
-    SoftSkills?: string | string[];
-    TechnicalSkills?: string | string[];
-    Relevance?: string;
-    [key: string]: any;
-  };
-  Strengths?: Record<string, string>;
-  Summary?: string;
-  Superpowers?: string[];
-  Tools?: string[];
-  TopSkills?: string[];
-  [key: string]: any;
-}
-
+import { useProfile } from '../context/ProfileContext';
 
 
 export function ProfileAnalysisSection() {
 
-  const data: string = localStorage.getItem('profileAnalysis') || '';
-  // Parse the data if it's a string
-  let profileData: ProfileData;
-  
+  const { profileData } = useProfile();
+  const data: string = profileData?.analysis || '';
+  let parsedData:any;
+
   try {
-    profileData = typeof data === 'string' ? JSON.parse(data) : data;
+    parsedData = typeof data === 'string' ? JSON.parse(data) : data;
   } catch (error) {
     return (
       <div className="p-4 bg-red-50 text-red-800 rounded">
@@ -74,26 +24,26 @@ export function ProfileAnalysisSection() {
 
   
   // Extract other sections
-  const summary = profileData.Summary || '';
+  const summary = parsedData.Summary || '';
  
-  const topSkills = Array.isArray(profileData.TopSkills) ? profileData.TopSkills : [];
-  const bestAchievements = Array.isArray(profileData.BestAchievements) ? profileData.BestAchievements : [];
+  const topSkills = Array.isArray(parsedData.TopSkills) ? parsedData.TopSkills : [];
+  const bestAchievements = Array.isArray(parsedData.BestAchievements) ? parsedData.BestAchievements : [];
   
   // Skills assessment
-  const skillsAssessment = profileData.SkillsAssessment || {};
+  const skillsAssessment = parsedData.SkillsAssessment || {};
   const softSkills = parseSkills(skillsAssessment.SoftSkills);
   const technicalSkills = parseSkills(skillsAssessment.TechnicalSkills);
   
   // Career analysis
-  const careerAnalysis = profileData.CareerTrajectoryAnalysis || '';
-  const remarks = profileData.Remarks || '';
+  const careerAnalysis = parsedData.CareerTrajectoryAnalysis || '';
+  const remarks = parsedData.Remarks || '';
   
   // Strengths and gaps
-  const strengths:any = profileData.Strengths || [ {skill: '', rating: 0} ];
-  const skillGaps = parseSkills(profileData.SkillGaps);
+  const strengths:any = parsedData.Strengths || [ {skill: '', rating: 0} ];
+  const skillGaps = parseSkills(parsedData.SkillGaps);
  
   // AI impact
-  const aiImpact = profileData.AIImpactAssessment?.Impact || '';
+  const aiImpact = parsedData.AIImpactAssessment?.Impact || '';
 
   // Helper function to parse skills (handle both string and array)
   function parseSkills(skills: string | string[] | undefined): string[] {
@@ -252,7 +202,7 @@ export function ProfileAnalysisSection() {
                   <div className="mb-4">
                     <h3 className="mb-2 text-lg font-medium">Top Skills</h3>
                     <div className="flex flex-wrap gap-2">
-                      {topSkills.map((skill, index) => (
+                      {topSkills.map((skill:any, index:number) => (
                         <div key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
                           {skill}
                         </div>
@@ -266,7 +216,7 @@ export function ProfileAnalysisSection() {
                   <div className="mb-4">
                     <h3 className="mb-2 text-lg font-medium">Technical Skills</h3>
                     <div className="flex flex-wrap gap-2">
-                      {technicalSkills.map((skill, index) => (
+                      {technicalSkills.map((skill:any, index:number) => (
                         <div key={index} className="bg-yellow-200 px-3 py-1 rounded-full">
                           {skill}
                         </div>
@@ -280,7 +230,7 @@ export function ProfileAnalysisSection() {
                   <div className="mb-4">
                     <h3 className="mb-2 text-lg font-medium">Soft Skills</h3>
                     <div className="flex flex-wrap gap-2">
-                      {softSkills.map((skill, index) => (
+                      {softSkills.map((skill:any, index:number) => (
                         <div key={index} className="bg-green-100 text-green-800 px-3 py-1 rounded-full">
                           {skill}
                         </div>
@@ -317,7 +267,7 @@ export function ProfileAnalysisSection() {
                   <h2 className="mb-4 text-xl font-bold border-b pb-2">Best Achievements</h2>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <ul className="list-disc pl-5 space-y-2">
-                      {bestAchievements.map((achievement, index) => (
+                      {bestAchievements.map((achievement:any, index:number) => (
                         <li key={index}>{achievement}</li>
                       ))}
                     </ul>

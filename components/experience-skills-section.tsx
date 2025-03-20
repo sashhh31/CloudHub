@@ -1,11 +1,12 @@
 import React from 'react';
-
+import { useProfile } from '../context/ProfileContext';
 
 
 export function ExperienceSkillsSection() {
   // Parse the message string into an object
+  const { profileData } = useProfile();
+  const message: string = profileData?.analysis || '';
   let parsedData: any;
-  const message = localStorage.getItem('profileAnalysis');
   try {
     parsedData = typeof message === 'string' ? JSON.parse(message) : message;
     console.log(typeof message)
