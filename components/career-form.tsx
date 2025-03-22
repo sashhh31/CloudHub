@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from '@clerk/clerk-react';
 import { useProfile } from '@/context/ProfileContext';
 
 export function CareerForm() {
@@ -19,11 +18,9 @@ export function CareerForm() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const router = useRouter();
   const [pdfJsLoaded, setPdfJsLoaded] = useState<boolean>(false);
-  const [inputMethod, setInputMethod] = useState<'linkedin' | 'file' | 'none'>('none');
   const { setProfileData } = useProfile();
 
 
-  const { isSignedIn, isLoaded } = useAuth();
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
@@ -98,26 +95,12 @@ export function CareerForm() {
 
   const handleLinkedinChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (value) {
-      setInputMethod('linkedin');
-      // Clear file if LinkedIn URL is being entered
-      setFile(null);
-      setFileType('');
-      setPdfUrl(null);
-      setExtractedText('');
-    } else if (inputMethod === 'linkedin') {
-      setInputMethod('none');
-    }
     setLinkedinUrl(value);
   };
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
     if (selectedFile) {
-      setInputMethod('file');
-      // Clear LinkedIn URL if file is being uploaded
-      setLinkedinUrl('');
-      
       if (selectedFile.type === "application/pdf") {
         setFileType("pdf");
         try {
@@ -170,9 +153,6 @@ export function CareerForm() {
         setPdfUrl(null);
       }
       setFile(selectedFile);
-    } else if (inputMethod === 'file') {
-      // If file selection was canceled and it was the active method
-      setInputMethod('none');
     }
   };
 
@@ -182,29 +162,23 @@ export function CareerForm() {
     setPdfUrl(null);
     setExtractedText('');
     setProgress(0);
-    setInputMethod('none');
   };
 
   const clearLinkedinUrl = () => {
     setLinkedinUrl('');
-    setInputMethod('none');
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!isLoaded) {
-      setIsLoading(true);
+    // Check that both LinkedIn URL and file are provided
+    if (!linkedinUrl) {
+      setError('Please enter your LinkedIn URL');
       return;
     }
     
-    if (!isSignedIn) {
-      router.push('/sign-in');
-      return;
-    }
-  
-    if (!linkedinUrl && !file) {
-      setError('Please enter a LinkedIn URL or upload a file');
+    if (!file) {
+      setError('Please upload your resume');
       return;
     }
   
@@ -214,18 +188,14 @@ export function CareerForm() {
     try {
       const formData = new FormData();
       formData.append('jobTitle', jobTitle);
+      formData.append('linkedinUrl', linkedinUrl);
       
-      if (linkedinUrl) {
-        formData.append('linkedinUrl', linkedinUrl);
-        formData.append('fileType', 'linkedin');
-      }
+      // Always append the file
+      formData.append('resume', file);
+      formData.append('fileType', fileType);
       
-      if (file) {
-        formData.append('fileType', fileType);
-        
-        if (extractedText && (fileType === 'pdf' || fileType === 'txt' || fileType === 'json')) {
-          formData.append('extractedText', extractedText);
-        }
+      if (extractedText && (fileType === 'pdf' || fileType === 'txt' || fileType === 'json')) {
+        formData.append('extractedText', extractedText);
       }
       
       const response = await fetch('/api/upload', {
@@ -233,14 +203,14 @@ export function CareerForm() {
         body: formData,
       });
       
-      const data = await response.json();
-
       if (!response.ok) {
         const errorText = await response.text();
         console.error("API Error:", errorText);
         throw new Error(`Server error: ${errorText}`);
       }
-  
+      
+      const data = await response.json();
+
       if (!data.analysis) {
         throw new Error('No analysis data received from server');
       }
@@ -257,8 +227,11 @@ export function CareerForm() {
     }
   };
 
-
-
+  // Determine if submit button should be enabled
+  const isSubmitDisabled = isLoading || 
+                          !linkedinUrl || 
+                          !file || 
+                          (file && fileType === 'pdf' && !extractedText && !error);
 
   return (
     <div className="space-y-6 rounded-lg w-[500px] bg-white p-6">
@@ -277,6 +250,8 @@ export function CareerForm() {
         
         <div className="space-y-2 mt-6">
           <Label>Upload Portfolio</Label>
+          
+          {/* LinkedIn URL input - always required */}
           <div className="flex items-center rounded-md border border-gray-200 px-3 py-2 bg-gray-100 relative">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -296,10 +271,11 @@ export function CareerForm() {
             </svg>
             <Input
               className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
-              placeholder="Paste LinkedIn URL here"
+              placeholder="Paste LinkedIn URL here (required)"
               value={linkedinUrl}
               onChange={handleLinkedinChange}
-              disabled={isLoading || inputMethod === 'file'}
+              disabled={isLoading}
+              required
             />
             {linkedinUrl && (
               <button
@@ -313,18 +289,17 @@ export function CareerForm() {
             )}
           </div>
           
-          <div className="text-center text-sm text-gray-500">or</div>
+          <div className="text-center text-sm text-gray-500">and</div>
           
+          {/* Resume upload - always required */}
           <div 
-            className={`flex h-32 ${inputMethod !== 'linkedin' ? 'cursor-pointer' : 'opacity-50'} items-center justify-center rounded-md border border-dashed border-gray-300 px-6 py-4 text-center relative`}
+            className="flex h-32 cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-300 px-6 py-4 text-center relative"
             onClick={() => {
-              if (inputMethod !== 'linkedin') {
-                document.getElementById('file-upload')?.click();
-              }
+              document.getElementById('file-upload')?.click();
             }}
           >
             <div className="space-y-1">
-              <p className="text-sm font-medium">Upload your resume</p>
+              <p className="text-sm font-medium">Upload your resume (required)</p>
               <p className="text-xs text-gray-500">Supported formats: PDF, DOCX, TXT, JSON</p>
               <input 
                 id="file-upload"
@@ -332,7 +307,8 @@ export function CareerForm() {
                 className="hidden" 
                 accept=".pdf,.docx,.txt,.json"
                 onChange={handleFileChange}
-                disabled={isLoading || inputMethod === 'linkedin'}
+                disabled={isLoading}
+                required
               />
               {file && (
                 <div className="text-xs text-green-600 mt-2 flex items-center justify-center">
@@ -346,16 +322,11 @@ export function CareerForm() {
                     }}
                     title="Remove file"
                   >
-                    
+                    ×
                   </button>
                 </div>
               )}
             </div>
-            {inputMethod === 'linkedin' && (
-              <div className="absolute inset-0 bg-gray-50 bg-opacity-70 flex items-center justify-center">
-                <p className="text-sm font-bold text-gray-900">Clear LinkedIn URL to upload a file</p>
-              </div>
-            )}
           </div>
         </div>
         
@@ -375,7 +346,7 @@ export function CareerForm() {
         <Button 
           type="submit"
           className="w-full rounded-full bg-blue-600 hover:bg-blue-700 mt-6"
-          disabled={!!(isLoading || (inputMethod === 'none') || (file && fileType === 'pdf' && !extractedText && !error))}
+          disabled={isSubmitDisabled}
         >
           {isLoading ? 'Processing...' : 'Analyze Portfolio'}
         </Button>

@@ -1,17 +1,36 @@
-import {  Mail, Phone } from "lucide-react"
-import React from 'react';
+"use client"
+
+import { Check, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+
+import { Mail, Phone, Download, Share2, Newspaper, ExternalLink, Linkedin } from "lucide-react"
+import React, { useRef, useState, useEffect } from 'react';
 import { parseProfileData } from "../utils/parseProfileData";
 import Link from "next/link";
 import { useProfile } from "@/context/ProfileContext";
+import html2canvas from 'html2canvas';
+import { prisma } from "@/lib/prisma"
+import axios from "axios"
 
 export function ProfileOverviewSection() {
+  const [showQuestionnaireDialog, setShowQuestionnaireDialog] = useState(0);
   const { profileData } = useProfile();
-  const message: string = profileData?.analysis || '';
-  let parsedData: any;
-  
+  const message = profileData?.analysis || '';
+  const rightProfileRef = useRef(null);
+  let parsedData;
+
   try {
-    parsedData = parseProfileData(message);
-    console.log(parsedData);
+    parsedData = JSON.parse(message);
   } catch (error) {
     return (
       <section className="w-full py-12 md:py-24 bg-white px-4 md:px-6">
@@ -24,50 +43,51 @@ export function ProfileOverviewSection() {
       </section>
     );
   }
+
   // Extract data from the parsed object
- const BasicProfileInformation= Array.isArray(parsedData.BasicProfileInformation) ? parsedData.BasicProfileInformation : 
-                  parsedData.BasicProfileInformation ? [parsedData.BasicProfileInformation] : [];
+  const BasicProfileInformation = Array.isArray(parsedData.BasicProfileInformation) ? parsedData.BasicProfileInformation :
+    parsedData.BasicProfileInformation ? [parsedData.BasicProfileInformation] : [];
   const name = BasicProfileInformation[0].Name || 'No name data available';
   const currentRole = BasicProfileInformation[0].CurrentRole || 'No current role data available';
   const company = BasicProfileInformation[0].Company || 'No company data available';
   const email = BasicProfileInformation[0].Email || 'No email data available';
   const phone = BasicProfileInformation[0].PhoneNumber || 'No phone number data available';
-  
+
   const aiScore = parsedData.AIScore || 80;
-  
-  const SkillsAssessment= Array.isArray(parsedData.SkillsAssessment) ? parsedData.SkillsAssessment : 
-                  parsedData.SkillsAssessment ? [parsedData.SkillsAssessment] : [];
+
+  const SkillsAssessment = Array.isArray(parsedData.SkillsAssessment) ? parsedData.SkillsAssessment :
+    parsedData.SkillsAssessment ? [parsedData.SkillsAssessment] : [];
 
   const relevance = SkillsAssessment[0].Relevance || 'No relevance data available';
-  
+
   const strengths = parsedData.Strengths || {};
-  
+
   // Ensure skillGaps is always an array
   const topSkills = Array.isArray(parsedData.TopSkills) ? parsedData.TopSkills : [];
 
-   const education = parsedData.Education || {};
+  const education = parsedData.Education || {};
 
   const remarks = parsedData.RemarksAboutProfile || 'No remarks available';
-  
-const aiImpact= parsedData.AIAssessment || 'No AI impact assessment available';
-const bestAchievements = Array.isArray(parsedData.Achievements.Description) ? parsedData.Achievements.Description : ['No best achievements data available'];
-const tools = Array.isArray(parsedData.Tools) ? parsedData.Tools : ['No tools data available'];
+
+  const aiImpact = parsedData.AIAssessment || 'No AI impact assessment available';
+  const bestAchievements = parsedData.Achievements.Description ? parsedData.Achievements.Description : ['No best achievements data available'];
+  const tools = Array.isArray(parsedData.Tools) ? parsedData.Tools : ['No tools data available'];
   // Extract technical skills as an array
 
-  const superpowers = Array.isArray(parsedData.Superpowers) ? parsedData.Superpowers : ['No superpowers data available'];
+  const superpowers = parsedData.Superpowers ? parsedData.Superpowers : ['No superpowers data available'];
 
   // Calculate percentages for skill bars
-  const softSkillsScore = 75; 
-  const technicalSkillsScore = 80; 
+  const softSkillsScore = 75;
+  const technicalSkillsScore = 80;
   const relevanceScore = relevance?.includes('highly relevant') ? 90 : 70;
-const timelinePrediction= parsedData.TimelineBeforeSignificantAIImpact || '0';
-  // Extract AI impact percentage
+  const timelinePrediction = parsedData.TimelineBeforeSignificantAIImpact || '0';
+  const Article = parsedData.Article
   const aiImpactPattern = /(\d+)%/;
   const aiImpactText = typeof aiImpact === 'string' ? aiImpact : '';
   const aiImpactMatch = aiImpactText.match(aiImpactPattern);
   const aiImpactPercentage = aiImpactMatch ? parseInt(aiImpactMatch[1]) : 80;
-  const experience = Array.isArray(parsedData.Experience) ? parsedData.Experience : 
-  parsedData.Experience ? [parsedData.Experience] : ['No experience data available'];
+  const experience = Array.isArray(parsedData.Experience) ? parsedData.Experience :
+    parsedData.Experience ? [parsedData.Experience] : ['No experience data available'];
   // Extract strength percentages
   const strengthPercentages: Record<string, number> = {};
   Object.entries(strengths).forEach(([key, value]) => {
@@ -82,6 +102,216 @@ const timelinePrediction= parsedData.TimelineBeforeSignificantAIImpact || '0';
       strengthPercentages[key] = 70; // Default value
     }
   });
+
+  // Function to download the right profile as an image
+  const downloadProfileImage = async () => {
+    if (rightProfileRef.current) {
+      try {
+        await document.fonts.ready; // Ensure fonts are loaded
+
+        const canvas = await html2canvas(rightProfileRef.current, {
+          scale: 1, // Higher scale for better quality
+          backgroundColor: null,
+          useCORS: true,
+          logging: true, // Debugging info
+        });
+
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `${name.replace(/\s+/g, '_')}_profile.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error("Error generating image:", error);
+        alert("Failed to download image. Please try again.");
+      }
+    }
+  };
+
+  // Function to share profile on LinkedIn
+  const shareOnLinkedIn = async () => {
+    if (rightProfileRef.current) {
+      try {
+        // First generate the image
+        const canvas = await html2canvas(rightProfileRef.current, {
+          scale: 2,
+          backgroundColor: null,
+          useCORS: true
+        });
+
+        const image = canvas.toDataURL("image/png");
+
+        // Create a blob from the data URL
+        const blobData = await fetch(image).then(res => res.blob());
+
+        // Create a text to share with the image
+        const shareText = `Check out my professional AI impact profile for ${name}! See how AI might affect my career and what skills make me stand out. #CareerProfile #AIImpact #CubeHub`;
+
+        const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=https://cubehub.com&title=${encodeURIComponent(shareText)}`;
+
+        // Open LinkedIn in a new tab
+        window.open(linkedInShareUrl, '_blank');
+      } catch (error) {
+        console.error("Error sharing to LinkedIn:", error);
+        alert("Failed to share on LinkedIn. Please try again.");
+      }
+    }
+  };
+
+  const AIQuestionnaireDialog = () => {
+    const [open, setOpen] = useState(showQuestionnaireDialog > 0);
+    const [email, setEmail] = useState("");
+    const [emailSubmitted, setEmailSubmitted] = useState(false);
+    const [response, setResponse] = useState(null);
+    const [submitted, setSubmitted] = useState(false);
+    const [emailError, setEmailError] = useState("");
+
+    // Effect to watch for dialog closing and trigger download
+    useEffect(() => {
+      if (!open && showQuestionnaireDialog > 0) {
+        // Dialog was open and now it's closed, trigger the download
+        downloadProfileImage();
+        setShowQuestionnaireDialog(0); // Reset the state
+      }
+    }, [open]);
+
+    // Effect to update open state when showQuestionnaireDialog changes
+    useEffect(() => {
+      setOpen(showQuestionnaireDialog > 0);
+    }, [showQuestionnaireDialog]);
+
+    const validateEmail = (email:string) => {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(email);
+    };
+
+    const handleEmailSubmit = (e:React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+
+      if (!email) {
+        setEmailError("Email is required");
+        return;
+      }
+
+      if (!validateEmail(email)) {
+        setEmailError("Please enter a valid email address");
+        return;
+      }
+
+      setEmailError("");
+      setEmailSubmitted(true);
+    };
+
+    const handleResponse = async (answer:any) => {
+      setResponse(answer);
+      setSubmitted(true);
+
+      
+      const questionnaire = await axios.post("/api/ai-questionnaire", {
+        email,
+        answers: answer,
+      });
+      console.log(questionnaire);
+      setTimeout(() => {
+        setOpen(false);
+        downloadProfileImage();
+      }, 1000);
+    };
+
+    return (
+      <Dialog open={open} onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen && showQuestionnaireDialog > 0) {
+          // If dialog is closing and was previously shown via the button click
+          setTimeout(() => {
+            setShowQuestionnaireDialog(0);
+          }, 500); // Small delay to ensure dialog is closed
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">AI Profile Recommendations</DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              <div className="flex items-center gap-2 text-black mb-2">
+                <Mail className="h-5 w-5" />
+                <span>We will share your report to your email</span>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+
+          {!submitted ? (
+            <>
+              {!emailSubmitted ? (
+                <form onSubmit={handleEmailSubmit} className="py-4">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Your Email Address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={emailError ? "border-destructive" : ""}
+                      />
+                      {emailError && <p className="text-sm text-destructive">{emailError}</p>}
+                    </div>
+
+                    <Button type="submit" className="w-full">
+                      Continue
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="py-6">
+                  <h2 className="text-lg font-medium mb-4">
+                    Would you like to get more AI recommendations to up-skill your profile?
+                  </h2>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button
+                      variant="outline"
+                      className="h-15 text-lg text-center hover:bg-green-400 hover:text-primary-foreground transition-all"
+                      onClick={() => handleResponse("yes")}
+                    >
+                      <Check className="mr-2 h-5 w-5" />
+                      Yes
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="h-15 text-lg hover:bg-destructive hover:text-destructive-foreground transition-all"
+                      onClick={() => handleResponse("no")}
+                    >
+                      <X className="mr-2 h-5 w-5" />
+                      No
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter className="sm:justify-start">
+                <div className="text-xs text-muted-foreground">
+                  Your preferences will be saved to provide you with a personalized experience.
+                </div>
+              </DialogFooter>
+            </>
+          ) : (
+            <div className="py-10 text-center">
+              <div className="text-xl font-medium mb-2">Thank you for your response!</div>
+              <p className="text-muted-foreground">
+                {response === "yes"
+                  ? `We'll send AI recommendations to ${email} to help up-skill your profile.`
+                  : `We've noted your preference and will send your report to ${email}.`}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   return (
     <section className="w-full py-12 md:py-16 bg-white px-36 md:px-36">
@@ -113,50 +343,47 @@ const timelinePrediction= parsedData.TimelineBeforeSignificantAIImpact || '0';
                 </div>
               </div>
             </div>
-
-            {/* AI Score */}
             <div className="mt-8 rounded-2xl bg-gray-100 p-6 w-[250px] h-[200px]">
               <div className="flex flex-col items-center">
                 <div className="relative h-40 w-40">
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="flex flex-col items-center mt-3">
                       <div className="text-4xl font-semi-bold mb-2">{aiScore.Total}</div>
-                  <div className=" text-center font-bold">AI Score - {aiScore.Assessment}</div>
+                      <div className=" text-center font-bold">AI Score - {aiScore.Assessment}</div>
                     </div>
                   </div>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <path
-    d="M 10,50 A 40,40 0 0,1 90,50"
-    fill="none"
-    stroke="#ffffff"
-    strokeWidth="12"
-    strokeLinecap="round"
-  />
-  
-  <path
-    d="M 10,50 A 40,40 0 0,1 90,50"
-    fill="none"
-    stroke="#0066ff"
-    strokeWidth="12"
-    strokeLinecap="round"
-    strokeDasharray="125.6"
-    strokeDashoffset={125.6 - ((aiScore.Total / 100) * 125.6)}
-    transform="rotate(0 50 50)"
-  />
-</svg>
+                    <path
+                      d="M 10,50 A 40,40 0 0,1 90,50"
+                      fill="none"
+                      stroke="#ffffff"
+                      strokeWidth="12"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M 10,50 A 40,40 0 0,1 90,50"
+                      fill="none"
+                      stroke="#0066ff"
+                      strokeWidth="12"
+                      strokeLinecap="round"
+                      strokeDasharray="125.6"
+                      strokeDashoffset={125.6 - ((aiScore.Total / 100) * 125.6)}
+                      transform="rotate(0 50 50)"
+                    />
+                  </svg>
                 </div>
               </div>
             </div>
-
-            {/* Skills Bars */}
             <div className="mt-8 space-y-4">
               <div className="flex">
                 <div className=" ">
                   <span>Soft Skills</span>
                 </div>
                 <div className="h-3 w-[300px] overflow-hidden rounded-full bg-gray-200 ml-[50px] mt-1">
-                  <div className="h-full rounded-full bg-blue-800" style={{ width: `${softSkillsScore}%` }}></div>
+                  <div className="h-full rounded-full bg-blue-800" style={{ width: `${softSkillsScore}%` }}> </div>
                 </div>
+                <p className="ml-2 top-5 font-semibold text-sm">{softSkillsScore}%</p>
               </div>
 
               <div className="flex">
@@ -166,6 +393,7 @@ const timelinePrediction= parsedData.TimelineBeforeSignificantAIImpact || '0';
                 <div className="h-3 w-[300px] overflow-hidden rounded-full bg-gray-200 ml-4 mt-1">
                   <div className="h-full rounded-full bg-blue-800" style={{ width: `${technicalSkillsScore}%` }}></div>
                 </div>
+                <p className="ml-2 top-5 font-semibold text-sm">{technicalSkillsScore}%</p>
               </div>
 
               <div className="flex ">
@@ -175,114 +403,137 @@ const timelinePrediction= parsedData.TimelineBeforeSignificantAIImpact || '0';
                 <div className="h-3 w-[300px] overflow-hidden rounded-full bg-gray-200 ml-[50px]  mt-1">
                   <div className="h-full rounded-full bg-blue-800" style={{ width: `${relevanceScore}%` }}></div>
                 </div>
+                <p className="ml-2 top-5 font-semibold text-sm">{relevanceScore}%</p>
               </div>
             </div>
+            <div className="mt-8 rounded-lg bg-gray-0 border-2 border-gray-200 p-4 w-[460px] space-y-5  ">
+              <div className="font-semibold text-lg flex gap-5">
+                <Newspaper className="h-5 w-5 mt-1 text-blue-500" />
 
-            {/* AI Impact */}
-            <div className="mt-8 rounded-lg bg-gray-100 p-4 text-center">
-              <span className="font-medium">{aiImpact.impactScore}%</span> chance that AI will impact this career 
+                Relevant Article Links
+              </div>
+              <div className="flex">
+                {Article.Title}
+              </div>
+              <span className="flex-row flex justify-between text-blue-500">
+                <Link href={Article.Link} className="flex gap-2">
+                  <p>Read Full Article Here</p>
+                  <ExternalLink className="h-4 w-4 mt-1 " />
+                </Link>
+              </span>
             </div>
-
           </div>
 
-          {/* Right Column - Profile Details */}
-          <div className="bg-gradient-to-br from-blue-50 from-10% to-pink-50 rounded-xl shadow-sm">
-
-          <div className="rounded-lg p-8 h-fit grid grid-cols-2 gap-4 border-b-2 border-gray-200 ">
-            <div>
-
-            <h1 className="text-3xl font-bold">{name || "Anonymus"}</h1>
-
-            <div className="mt-4 gap-8">
-              <div className="font-medium mb-3">{experience.Role || "No role data available"}</div>
-              <div>{experience.Company || education[0].Institution || "No company data available"}</div>
+          {/* Right Column - Profile Details with download & share buttons */}
+          <div className="relative">
+            {/* Action buttons - positioned absolutely above the profile card */}
+            <div className="absolute top-[35px] right-4 flex space-x-2 z-10 ml-5 ">
+              <button
+                onClick={() => setShowQuestionnaireDialog(1)}
+                className="flex items-center gap-1 rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+              >
+                <Download className="h-4 w-4" />
+              </button>
+              <button
+                onClick={shareOnLinkedIn}
+                className="flex items-center gap-1 rounded-full bg-blue-100 px-4 py-2 text-sm font-medium text-blue-800 hover:bg-blue-200 transition-colors"
+              >
+                <Linkedin className="h-4 w-4" />
+              </button>
             </div>
-            <div className="mt-4 ">
-              <div className="font-medium mb-3">{education[0].Degree || "Computer Science Student"}</div>
-              <div>{education[0].Institution || "University"}</div>
-            </div>
-              <div className="h-32 mt-4 w-fit bg-white border-2 border-gray-300 p-4 rounded-lg justify-evenly flex flex-col items-center">
-                <div className="flex flex-row items-center justify-center">
-                  <div className="mr-2">
 
-                <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="20" height="20" viewBox="0 0 50 50"
-strokeWidth="fill:#228BE6;">
-<path d="M 25 2 C 12.264481 2 2 12.264481 2 25 C 2 37.735519 12.264481 48 25 48 C 37.735519 48 48 37.735519 48 25 C 48 12.264481 37.735519 2 25 2 z M 25 4 C 36.664481 4 46 13.335519 46 25 C 46 36.664481 36.664481 46 25 46 C 13.335519 46 4 36.664481 4 25 C 4 13.335519 13.335519 4 25 4 z M 24.984375 6.9863281 A 1.0001 1.0001 0 0 0 24 8 L 24 22.173828 C 22.81904 22.572762 22 23.655572 22 25 C 22 25.471362 22.108361 25.906202 22.289062 26.296875 L 16.292969 32.292969 A 1.0001 1.0001 0 1 0 17.707031 33.707031 L 23.703125 27.710938 C 24.093798 27.891639 24.528638 28 25 28 C 26.7 28 28 26.7 28 25 C 28 23.655572 27.18096 22.572762 26 22.173828 L 26 8 A 1.0001 1.0001 0 0 0 24.984375 6.9863281 z"></path>
-</svg>
-  </div>
-                <h2 className="text-center font-bold">Timeline Prediction</h2>
-                </div>
-                <h1 className="text-center text-2xl font-bold">{timelinePrediction} Years</h1>
-                <h2 className="text-center text-sm text-gray-500">Before Significant AI Impact</h2>
-              </div>
-            </div>
-         <div className="mt-7">
-
-            <div className="mt-6">
-            {superpowers && (
+            {/* Right Profile - will be downloadable */}
+            <div
+              ref={rightProfileRef}
+              className="bg-gradient-to-br from-blue-50 from-20% to-pink-100 rounded-xl shadow-sm"
+            >
+              <div className="rounded-lg p-8 h-fit grid grid-cols-2 gap-4 border-b-2 border-gray-200 ">
                 <div>
-                  <h2 className="mb-4 text-lg font-semibold text-gray-400">Superpowers</h2>
-                  <div className=" rounded-lg">
-                    <ul className="ml-4 list-disc space-y-2 text-bold text-black">
-                      {superpowers.map((power: string, index: number) => (
-                        <li key={index}>{power}</li>
-                      ))}
-                    </ul>
+                  <h1 className="text-3xl font-semibold">{name || "Anonymous"}</h1>
+
+                  <div className="mt-4 gap-8">
+                    <div className="font-semibold mb-3">{experience[0].Role || "No role data available"}</div>
+                    <div>{experience[0].Company || education[0].Institution || "No company data available"}</div>
+                  </div>
+                  <div className="mt-4 ">
+                    <div className="font-semibold mb-3">{education[0].Degree || "Computer Science Student"}</div>
+                    <div>{education[0].Institution || "University"}</div>
+                  </div>
+                  <div className="h-32 mt-10 w-fit  rounded-lg justify-evenly flex flex-col gap-3">
+                    <div className="flex flex-row mr-3">
+                      <div className=" mt-1 mr-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="20" height="20" viewBox="0 0 50 50"
+                          strokeWidth="fill:#000000;">
+                          <path d="M 25 2 C 12.264481 2 2 12.264481 2 25 C 2 37.735519 12.264481 48 25 48 C 37.735519 48 48 37.735519 48 25 C 48 12.264481 37.735519 2 25 2 z M 25 4 C 36.664481 4 46 13.335519 46 25 C 46 36.664481 36.664481 46 25 46 C 13.335519 46 4 36.664481 4 25 C 4 13.335519 13.335519 4 25 4 z M 24.984375 6.9863281 A 1.0001 1.0001 0 0 0 24 8 L 24 22.173828 C 22.81904 22.572762 22 23.655572 22 25 C 22 25.471362 22.108361 25.906202 22.289062 26.296875 L 16.292969 32.292969 A 1.0001 1.0001 0 1 0 17.707031 33.707031 L 23.703125 27.710938 C 24.093798 27.891639 24.528638 28 25 28 C 26.7 28 28 26.7 28 25 C 28 23.655572 27.18096 22.572762 26 22.173828 L 26 8 A 1.0001 1.0001 0 0 0 24.984375 6.9863281 z"></path>
+                        </svg>
+                      </div>
+                      <h2 className="text-center text-lg text-gray-400 font-semibold">Timeline Prediction</h2>
+                    </div>
+                    <h1 className=" text-2xl ml-12 font-semibold">{timelinePrediction} Years</h1>
+                    <h2 className="font-semibold  text-gray-900">Before Significant AI Impact</h2>
                   </div>
                 </div>
-              )}
-              <div className="text-lg font-medium text-gray-400 mt-12">Top Skills</div>
-              <div className="mt-1 flex flex-wrap gap-1">
-                  {topSkills.length > 0 && (
-                    <div className="mb-4">
-                    <div className="flex flex-wrap gap-2">
-                      {topSkills.map((skill: string, index: number) => (
-                        <div key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                          {skill}
+                <div className="mt-7">
+                  <div className="mt-6">
+                    {superpowers && (
+                      <div>
+                        <h2 className="mb-4 text-lg font-semibold text-gray-400">Superpowers</h2>
+                        <div className=" rounded-lg">
+                          <ul className="list-disc space-y-5 font-semibold text-gray-900">
+                            {superpowers}
+                          </ul>
                         </div>
-                      ))}
+                      </div>
+                    )}
+                    <div className="text-lg font-medium text-gray-400 mt-10">Top Skills</div>
+                    <div className="mt-4 gap-2 mr-3">
+                      {topSkills.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {topSkills.map((skill:any, index:number) => (
+                            <div
+                              key={index}
+                              className="text-gray-900 font-semibold px-1 rounded-full"
+                            >
+                              {skill}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-                
-              </div>
-            </div>
-
-        </div>
-
-        </div>
-        {bestAchievements.length > 0 && (
-                <div className="pr-8 pl-8 pt-8 pb-4 ">
-                  <h2 className="mb-4 text-lg font-semibold text-gray-400">Best Achievements</h2>
-                  <div className="bg-gray-50 rounded-lg">
-                    <ul className="list-disc  space-y-2 text-bold text-black">
-                      {bestAchievements.map((achievement: string, index: number) => (
-                        <p key={index}>{achievement}</p>
-                      ))}
-                    </ul>
-                  </div>
                 </div>
-              )}
-               <div className=" pr-8 pl-8 pb-8 ">
-              <div className="mb-4 text-lg font-semibold text-gray-400">Tools</div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {tools.slice(0, 4).map((skill: string, i: number) => (
-                  <div key={i} className="rounded bg-purple-200 px-3 py-1 text-sm">
-                    {String(skill).split('(')[0].trim()}
-                  </div>
-                ))}
+              </div>
+              <div className="pr-8 pl-8 pt-8 pb-4 ">
+                <h2 className="mb-4 text-lg font-semibold text-gray-400">Best Achievements</h2>
+                <div className=" rounded-lg">
+                  <ul className="list-disc space-y-2 font-semibold text-black ">
+                    <p>{bestAchievements}</p>
+                  </ul>
+                </div>
+              </div>
+              <div className=" pr-8 pl-8 pb-8 ">
+                <div className="mb-4 text-lg font-semibold text-gray-400">Tools</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {tools.slice(0, 10).map((skill:any , i:number) => (
+                    <div key={i} className="rounded font-semibold text-gray-900 py-1 mr-5 text-base">
+                      {String(skill).split('(')[0].trim()}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="text-center pr-8 pl-8 pb-8 ">
+                Get your profile analysis at
+                <Link href="https://scan.knowai.com" >
+                  <span className="font-bold"> scan.knowai.com</span>
+                </Link>
               </div>
             </div>
-            <div className="ml-52 pr-2 pl-8 pb-8 ">
-
-   Get your profile analysis at 
-                <Link href="https://cubehub.com" >
-   <span className="font-bold"> cubehub.com</span>
-  </Link>
-  </div>
-</div>
-            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Render the AIQuestionnaireDialog component */}
+      <AIQuestionnaireDialog />
     </section>
   );
 }

@@ -1,6 +1,5 @@
 import { CtaSection } from "@/components/cta-section"
 import { FeatureSection } from "@/components/feature-section"
-import { ClientsSection } from "@/components/clients-section"
 import { FeedbackSection } from "@/components/feedback-section"
 import { ProjectSection } from "@/components/project-section"
 import { Footer } from "@/components/footer"
@@ -25,7 +24,6 @@ export default function Home() {
         isImageRight={false}
         bgColor="bg-gray-0"
       />
-      <ClientsSection />
       <ProjectSection />
       <CtaSection />
       <Footer />

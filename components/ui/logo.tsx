@@ -22,7 +22,7 @@ const Logo = ({ size = 'md', type = 'full', className = '' }: LogoProps) => {
       </div>
       {type === 'full' && (
         <span className={`font-bold ${sizes[size].text} text-gray-900`}>
-          Cloudhub
+          KnowAI
         </span>
       )}
     </div>

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 import { prisma } from "@/lib/prisma";
-import { currentUser } from '@clerk/nextjs/server';
 import axios from 'axios';
 
 // Initialize Prisma client
@@ -45,16 +44,6 @@ function extractLinkedInUsername(url: string): string | null {
 
 export async function POST(request: Request) {
   try {
-    // Get current user's email
-    const user = await currentUser();
-    const userEmail = user?.emailAddresses.find(
-      email => email.id === user.primaryEmailAddressId
-    )?.emailAddress;
-    
-    if (!userEmail) {
-      return NextResponse.json({ error: "User email not found" }, { status: 401 });
-    }
-    
     // Validate OpenAI API key
     const openaiApiKey = process.env.OPENAI_API_KEY;
     if (!openaiApiKey) {
@@ -64,20 +53,26 @@ export async function POST(request: Request) {
     const openai = new OpenAI({ apiKey: openaiApiKey });
     const formData = await request.formData();
     
-    const text = formData.get("extractedText");
+    const extractedText = formData.get("extractedText");
     const linkedinUrl = formData.get("linkedinUrl");
     const fileType = formData.get("fileType");
     
     console.log("Request received with file type:", fileType);
     
-    // Process the data based on the file type
-    let profileText: string;
+    // Initialize profileText as an array to collect data from both sources
+    let profileData = [];
     
-    if (fileType === 'linkedin') {
-      if (!linkedinUrl || typeof linkedinUrl !== 'string') {
-        return NextResponse.json({ error: 'Invalid LinkedIn URL' }, { status: 400 });
-      }
-
+    // Process extracted text if available
+    if (extractedText && typeof extractedText === 'string' && extractedText.trim() !== '') {
+      console.log("Processing extracted text from form");
+      profileData.push({
+        source: "resume",
+        content: extractedText
+      });
+    }
+    
+    // Process LinkedIn URL if available
+    if (linkedinUrl && typeof linkedinUrl === 'string' && linkedinUrl.trim() !== '') {
       console.log("Processing LinkedIn URL:", linkedinUrl);
       
       try {
@@ -85,45 +80,47 @@ export async function POST(request: Request) {
         if (!username) {
           return NextResponse.json({ error: 'Could not extract LinkedIn username' }, { status: 400 });
         }
-      const apiKey= process.env.SCRAPPING_DOG_API_KEY
+        
+        const apiKey = process.env.SCRAPPING_DOG_API_KEY;
         const url = 'https://api.scrapingdog.com/linkedin/';
         const params = {
-          api_key:apiKey ,
+          api_key: apiKey,
           type: 'profile',
           linkId: username
         };
         
-        const response = await axios.get(url, { params });
-        profileText = JSON.stringify(response.data);
+        const response = await axios.get(url, { params: params });
+        profileData.push({
+          source: "linkedin",
+          content: response.data
+        });
       } catch (error) {
         console.error('Error processing LinkedIn profile:', error);
-        return NextResponse.json(
-          {
-            error: 'Failed to process LinkedIn profile',
-            details: error instanceof Error ? error.message : 'Unknown error',
-          },
-          { status: 500 }
-        );
+        // Don't return error here, continue with any extracted text if available
       }
-    } else {
-      // Handle text-based resume
-      if (!text || typeof text !== 'string') {
-        return NextResponse.json({ error: 'No text provided for analysis' }, { status: 400 });
-      }
-      profileText = text;
     }
     
-    // Process the profile with OpenAI
-    const analysisResult = await processProfileWithAI(openai, profileText);
+    // Check if we have any data to process
+    if (profileData.length === 0) {
+      return NextResponse.json({ 
+        error: 'No valid data provided for analysis. Please provide extracted text or a valid LinkedIn URL.' 
+      }, { status: 400 });
+    }
+    
+    // Combine data for AI processing
+    const combinedProfileText = JSON.stringify(profileData);
+    
+    // Process the combined profile with OpenAI
+    const analysisResult = await processProfileWithAI(openai, combinedProfileText);
     
     if (!analysisResult.success) {
       return analysisResult;
     }
-
-    // console.log(analysisResult)
     
-    const dbPromise = storeProfileInDatabase(userEmail, analysisResult.analysis);
+    // Store in database asynchronously
+    const dbPromise = storeProfileInDatabase(analysisResult.analysis);
     // Don't await - let it run in the background
+    
     return NextResponse.json({ 
       success: true, 
       analysis: analysisResult,
@@ -140,7 +137,6 @@ export async function POST(request: Request) {
     );
   }
 }
-
 async function processProfileWithAI(openai: OpenAI, profileText: string) {
   // Build the prompt for OpenAI
   const prompt = `
@@ -158,8 +154,13 @@ async function processProfileWithAI(openai: OpenAI, profileText: string) {
         "Location": ""
       },
       "AIScore": {
-        "Total": 0, // 0-100 give a number it's mandatory
+        "Total": 0, // 0-100 give a number according to the profile and it's mandatory
         "Assessment": "" // "high", "medium", or "low"
+      },
+      "Article": { //Article which is relevant from AI score, linkedin and resume from mckensky or Harvard 
+        "Title": "", 
+        "Description": "" ,
+        "Link": ""
       },
       "SkillsAssessment": {
         "SoftSkills": [],
@@ -193,7 +194,7 @@ async function processProfileWithAI(openai: OpenAI, profileText: string) {
         {"Title": "", "Link": "", "Description": ""}
       ],
       "Summary": "", // 3-4 sentences
-      "Superpowers": [], // list atleast 3 superpowers
+      "Superpowers": [], // list atleast 2 lines of superpowers
       "Experience": [
         {"Role": "", "Company": "", "Duration": "", "Description": ""}
       ],
@@ -256,369 +257,245 @@ async function processProfileWithAI(openai: OpenAI, profileText: string) {
   }
 }
 
-async function storeProfileInDatabase(email: string, analysisData: any) {
+async function storeProfileInDatabase(analysisData: any) {
   try {
-    if (!email) {
-      throw new Error("Email is required to identify the user");
+    // Ensure analysisData exists and is an object
+    if (!analysisData || typeof analysisData !== 'object') {
+      console.warn('Invalid analysisData provided:', analysisData);
+      analysisData = {}; // Set to empty object to prevent further errors
     }
 
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: {
-        profileAssessment: true,
-        skills: true,
-        courses: true,
-        strengths: true,
-        recommendedCourses: true,
-        experience: true,
-        education: true,
-      }
-    });
-    
-    // If user doesn't exist, create a new user
-    if (!user) {
-      const newUser = await prisma.user.create({
-        data: {
-          email,
-        },
-        include: {
-          profileAssessment: true,
-          skills: true,
-          courses: true,
-          strengths: true,
-          recommendedCourses: true,
-          experience: true,
-          education: true,
-        }
-      });
-    }
-      const existingUser: any = await prisma.user.findUnique({
-        where: { email },
-      });
-      
-
-    // Destructure analysis data
+    // Safely destructure analysis data with defaults
     const {
-      BasicProfileInformation,
-      AIScore,
-      SkillsAssessment,
-      CareerTrajectory,
-      Courses,
-      Strengths,
-      SkillGaps,
-      Remark,
-      AIAssessment,
-      Achievements,
-      Tools,
-      TopSkills,
-      RecommendedCoursesFromCoursera,
-      Summary,
-      Superpowers,
-      Experience,
-      Education,
-      TimelineBeforeSignificantAIImpact
+      BasicProfileInformation = {},
+      AIScore = {},
+      SkillsAssessment = {},
+      CareerTrajectory = null,
+      Courses = [],
+      Strengths = [],
+      SkillGaps = [],
+      Remark = null,
+      AIAssessment = {},
+      Achievements = {},
+      Tools = [],
+      TopSkills = [],
+      RecommendedCoursesFromCoursera = [],
+      Summary = null,
+      Superpowers = [],
+      Experience = [],
+      Education = [],
+      TimelineBeforeSignificantAIImpact = null
     } = analysisData;
 
     // Use transaction for data consistency
-    return await prisma.$transaction(async (tx) => {
-      // 1. Update basic user info
-      if (BasicProfileInformation) {
-        await tx.user.update({
-          where: { id: existingUser.id },
-          data: {
-            name: BasicProfileInformation.Name || existingUser.name,
-            currentRole: BasicProfileInformation.CurrentRole || existingUser.currentRole,
-            company: BasicProfileInformation.Company || existingUser.company,
-            phoneNumber: BasicProfileInformation.PhoneNumber || existingUser.phoneNumber,
-            location: BasicProfileInformation.Location || existingUser.location,
-          },
-        });
-      }
-
-      // 2. Update or create profile assessment
-      await upsertProfileAssessment(tx, existingUser, {
-        AIScore,
-        SkillsAssessment,
-        CareerTrajectory,
-        SkillGaps,
-        Remark,
-        AIAssessment,
-        Achievements,
-        Tools,
-        TopSkills,
-        Summary,
-        Superpowers,
-        TimelineBeforeSignificantAIImpact
+    return await prisma.$transaction(async (tx: any) => {
+      // 1. Create a new profile with data, safely accessing nested properties
+      const newProfile = await tx.profile.create({
+        data: {
+          // Basic info with null fallbacks
+          name: BasicProfileInformation?.Name || null,
+          currentRole: BasicProfileInformation?.CurrentRole || null,
+          company: BasicProfileInformation?.Company || null,
+          email: BasicProfileInformation?.Email || null,
+          phoneNumber: BasicProfileInformation?.PhoneNumber || null,
+          location: BasicProfileInformation?.Location || null,
+          
+          // Required fields with safe defaults
+          aiScoreTotal: typeof AIScore?.Total === 'number' ? AIScore.Total : 0,
+          aiScoreAssessment: AIScore?.Assessment || "not assessed",
+          
+          // Optional profile fields
+          skillsRelevance: SkillsAssessment?.Relevance || null,
+          careerTrajectory: CareerTrajectory || null,
+          skillGaps: Array.isArray(SkillGaps) ? SkillGaps : [],
+          remark: Remark || null,
+          aiAnalysis: AIAssessment?.analysis || null,
+          aiImpactScore: typeof AIAssessment?.impactScore === 'number' ? AIAssessment.impactScore : null,
+          achievementsDescription: Achievements?.Description || null,
+          tools: Array.isArray(Tools) ? Tools : [],
+          topSkills: Array.isArray(TopSkills) ? TopSkills : [],
+          summary: Summary || null,
+          superpowers: Array.isArray(Superpowers) ? Superpowers : [],
+          timelineBeforeAIImpact: TimelineBeforeSignificantAIImpact || null
+        }
       });
-
-      // 3. Process skills
-      if (SkillsAssessment) {
-        await processSkills(tx, existingUser, SkillsAssessment);
+      
+      // 2. Process skills (if any) - with additional validation
+      if (SkillsAssessment && typeof SkillsAssessment === 'object') {
+        await processSkills(tx, newProfile.id, SkillsAssessment);
       }
 
-      // 4. Process courses
-      if (Courses && Courses.length > 0) {
-        await processCourses(tx, existingUser, Courses);
+      // 3. Process courses (if any) - with array validation
+      if (Array.isArray(Courses) && Courses.length > 0) {
+        await processCourses(tx, newProfile.id, Courses);
       }
 
-      // 5. Process strengths
-      if (Strengths && Strengths.length > 0) {
-        await processStrengths(tx, existingUser, Strengths);
+      // 4. Process strengths (if any) - with array validation
+      if (Array.isArray(Strengths) && Strengths.length > 0) {
+        await processStrengths(tx, newProfile.id, Strengths);
       }
 
-      // 6. Process recommended courses
-      if (RecommendedCoursesFromCoursera && RecommendedCoursesFromCoursera.length > 0) {
-        await processRecommendedCourses(tx, existingUser, RecommendedCoursesFromCoursera);
+      // 5. Process recommended courses (if any) - with array validation
+      if (Array.isArray(RecommendedCoursesFromCoursera) && RecommendedCoursesFromCoursera.length > 0) {
+        await processRecommendedCourses(tx, newProfile.id, RecommendedCoursesFromCoursera);
       }
 
-      // 7. Process experience
-      if (Experience && Experience.length > 0) {
-        await processExperience(tx, existingUser, Experience);
+      // 6. Process experience (if any) - with array validation
+      if (Array.isArray(Experience) && Experience.length > 0) {
+        await processExperience(tx, newProfile.id, Experience);
       }
 
-      // 8. Process education
-      if (Education && Education.length > 0) {
-        await processEducation(tx, existingUser, Education);
+      // 7. Process education (if any) - with array validation
+      if (Array.isArray(Education) && Education.length > 0) {
+        await processEducation(tx, newProfile.id, Education);
       }
 
-      // Return the updated user with all relations
-      return tx.user.findUnique({
-        where: { id: existingUser.id },
+      // Return the created profile with all relations
+      return tx.profile.findUnique({
+        where: { id: newProfile.id },
         include: {
-          profileAssessment: true,
           skills: true,
           courses: true,
           strengths: true,
           recommendedCourses: true,
-          experience: true,
+          experiences: true,
           education: true,
         },
       });
-    },{ timeout: 15000 });
+    }, { timeout: 15000 });
   } catch (error) {
     console.error('Error storing profile data:', error);
     throw error;
   }
 }
 
-// Helper functions for database operations
-async function upsertProfileAssessment(tx: any, user: any, data: any) {
-  const {
-    AIScore,
-    SkillsAssessment,
-    CareerTrajectory,
-    SkillGaps,
-    Remark,
-    AIAssessment,
-    Achievements,
-    Tools,
-    TopSkills,
-    Summary,
-    Superpowers,
-    TimelineBeforeSignificantAIImpact
-  } = data;
-
-  const updateData: any = {};
-  
-  if (AIScore) {
-    updateData.aiScoreTotal = AIScore.Total;
-    updateData.aiScoreAssessment = AIScore.Assessment;
-  }
-  
-  if (SkillsAssessment?.Relevance) updateData.skillsRelevance = SkillsAssessment.Relevance;
-  if (CareerTrajectory) updateData.careerTrajectory = CareerTrajectory;
-  if (Remark) updateData.remark = Remark;
-  if (AIAssessment?.analysis) updateData.aiAnalysis = AIAssessment.analysis;
-  if (AIAssessment?.impactScore) updateData.aiImpactScore = AIAssessment.impactScore;
-  if (Achievements?.Description) updateData.achievementsDescription = Achievements.Description;
-  if (Summary) updateData.summary = Summary;
-  if (TimelineBeforeSignificantAIImpact) updateData.timelineBeforeAIImpact = TimelineBeforeSignificantAIImpact;
-
-  // For array fields, append new values without duplicates
-  if (SkillGaps && SkillGaps.length > 0) {
-    const currentGaps = user.profileAssessment?.skillGaps || [];
-    updateData.skillGaps = [...new Set([...currentGaps, ...SkillGaps])];
-  }
-  
-  if (Tools && Tools.length > 0) {
-    const currentTools = user.profileAssessment?.tools || [];
-    updateData.tools = [...new Set([...currentTools, ...Tools])];
-  }
-  
-  if (TopSkills && TopSkills.length > 0) {
-    const currentTopSkills = user.profileAssessment?.topSkills || [];
-    updateData.topSkills = [...new Set([...currentTopSkills, ...TopSkills])];
-  }
-  
-  if (Superpowers && Superpowers.length > 0) {
-    const currentSuperpowers = user.profileAssessment?.superpowers || [];
-    updateData.superpowers = [...new Set([...currentSuperpowers, ...Superpowers])];
-  }
-
-  // If profile assessment exists, update it
-  if (user.profileAssessment) {
-    if (Object.keys(updateData).length > 0) {
-      await tx.profileAssessment.update({
-        where: { userId: user.id },
-        data: updateData,
-      });
-    }
-  } 
-}
-
-async function processSkills(tx: any, user: any, skillsAssessment: any) {
-  const existingSkillNames = (user?.skills ?? []).map((skill: any) => skill.name);
-  
-  // Process technical skills
-  if (skillsAssessment.TechnicalSkills && skillsAssessment.TechnicalSkills.length > 0) {
-    const newTechSkills = skillsAssessment.TechnicalSkills.filter(
-      (skill: string) => !existingSkillNames.includes(skill)
-    );
-    
-    // Batch create for improved performance
-    if (newTechSkills.length > 0) {
-      await tx.userSkill.createMany({
-        data: newTechSkills.map((skill: string) => ({
-          userId: user.id,
-          name: skill,
-          category: 'TechnicalSkill',
-        })),
+// Helper functions with robust error handling
+async function processSkills(tx: any, profileId: string, skillsAssessment: any) {
+  try {  
+    // Process technical skills with validation
+    if (Array.isArray(skillsAssessment.TechnicalSkills) && skillsAssessment.TechnicalSkills.length > 0) {
+      await tx.skill.createMany({
+        data: skillsAssessment.TechnicalSkills
+          .filter((skill: any) => typeof skill === 'string' && skill.trim() !== '')
+          .map((skill: string) => ({
+            profileId: profileId,
+            name: skill,
+            category: 'TechnicalSkill',
+          })),
         skipDuplicates: true,
       });
     }
-  }
-  
-  // Process soft skills
-  if (skillsAssessment.SoftSkills && skillsAssessment.SoftSkills.length > 0) {
-    const newSoftSkills = skillsAssessment.SoftSkills.filter(
-      (skill: string) => !existingSkillNames.includes(skill)
-    );
     
-    // Batch create for improved performance
-    if (newSoftSkills.length > 0) {
-      await tx.userSkill.createMany({
-        data: newSoftSkills.map((skill: string) => ({
-          userId: user.id,
-          name: skill,
-          category: 'SoftSkill',
-        })),
+    // Process soft skills with validation
+    if (Array.isArray(skillsAssessment.SoftSkills) && skillsAssessment.SoftSkills.length > 0) {
+      await tx.skill.createMany({
+        data: skillsAssessment.SoftSkills
+          .filter((skill: any) => typeof skill === 'string' && skill.trim() !== '')
+          .map((skill: string) => ({
+            profileId: profileId,
+            name: skill,
+            category: 'SoftSkill',
+          })),
         skipDuplicates: true,
       });
     }
+  } catch (error) {
+    console.error('Error processing skills:', error);
+    // Continue execution instead of throwing
   }
 }
 
-async function processCourses(tx: any, user: any, courses: any[]) {
-  const existingCourseTitles = (user?.courses ?? []).map((course: any) => course.title);
-  
-  const coursesToAdd = courses.filter(
-    (course: any) => !existingCourseTitles.includes(course.Title)
-  );
-
-  if (coursesToAdd.length > 0) {
+async function processCourses(tx: any, profileId: string, courses: any[]) {
+  try {
     await tx.course.createMany({
-      data: coursesToAdd.map((course: any) => ({
-        userId: user.id,
-        title: course.Title,
-        description: course.Description,
-      })),
+      data: courses
+        .filter((course: any) => course && typeof course === 'object')
+        .map((course: any) => ({
+          profileId: profileId,
+          title: course.Title || 'Untitled Course',
+          description: course.Description || null,
+        })),
       skipDuplicates: true,
     });
+  } catch (error) {
+    console.error('Error processing courses:', error);
+    // Continue execution instead of throwing
   }
 }
 
-async function processStrengths(tx: any, user: any, strengths: any[]) {
-  for (const strength of strengths) {
-    const existingStrength = (user?.strengths ?? []).find(
-      (s: any) => s.skill === strength.skill
-    );
-
-    if (existingStrength) {
-      if (existingStrength.rating !== strength.rating) {
-        await tx.strength.update({
-          where: { id: existingStrength.id },
-          data: { rating: strength.rating },
-        });
-      }
-    } else {
-      await tx.strength.create({
-        data: {
-          userId: user.id,
-          skill: strength.skill,
-          rating: strength.rating,
-        },
-      });
-    }
+async function processStrengths(tx: any, profileId: string, strengths: any[]) {
+  try {
+    await tx.strength.createMany({
+      data: strengths
+        .filter((strength: any) => strength && typeof strength === 'object' && strength.skill)
+        .map((strength: any) => ({
+          profileId: profileId,
+          skill: strength.skill || 'Unnamed Strength',
+          rating: typeof strength.rating === 'number' ? strength.rating : null,
+        })),
+      skipDuplicates: true,
+    });
+  } catch (error) {
+    console.error('Error processing strengths:', error);
+    // Continue execution instead of throwing
   }
 }
 
-async function processRecommendedCourses(tx: any, user: any, recommendedCourses: any[]) {
-  const existingCourseTitles = (user?.recommendedCourses ?? []).map(
-    (course: any) => course.title
-  );
-
-  const coursesToAdd = recommendedCourses.filter(
-    (course: any) => !existingCourseTitles.includes(course.Title)
-  );
-
-  if (coursesToAdd.length > 0) {
+async function processRecommendedCourses(tx: any, profileId: string, recommendedCourses: any[]) {
+  try {
     await tx.recommendedCourse.createMany({
-      data: coursesToAdd.map((course: any) => ({
-        userId: user.id,
-        title: course.Title,
-        link: course.Link,
-        description: course.Description,
-      })),
+      data: recommendedCourses
+        .filter((course: any) => course && typeof course === 'object')
+        .map((course: any) => ({
+          profileId: profileId,
+          title: course.Title || 'Untitled Recommended Course',
+          link: course.Link || null,
+          description: course.Description || null,
+        })),
       skipDuplicates: true,
     });
+  } catch (error) {
+    console.error('Error processing recommended courses:', error);
+    // Continue execution instead of throwing
   }
 }
 
-async function processExperience(tx: any, user: any, experiences: any[]) {
-  const getExpKey = (exp: any) => `${exp.Role}|${exp.Company}|${exp.Duration}`;
-  const existingExpKeys = (user?.experience ?? []).map(
-    (exp: any) => `${exp.role}|${exp.company}|${exp.duration}`
-  );
-
-  const experiencesToAdd = experiences.filter(
-    (exp: any) => !existingExpKeys.includes(getExpKey(exp))
-  );
-
-  if (experiencesToAdd.length > 0) {
+async function processExperience(tx: any, profileId: string, experiences: any[]) {
+  try {
     await tx.experience.createMany({
-      data: experiencesToAdd.map((exp: any) => ({
-        userId: user.id,
-        role: exp.Role,
-        company: exp.Company,
-        duration: exp.Duration,
-        description: exp.Description,
-      })),
+      data: experiences
+        .filter((exp: any) => exp && typeof exp === 'object')
+        .map((exp: any) => ({
+          profileId: profileId,
+          role: exp.Role || 'Untitled Role',
+          company: exp.Company || null,
+          duration: exp.Duration || null,
+          description: exp.Description || null,
+        })),
       skipDuplicates: true,
     });
+  } catch (error) {
+    console.error('Error processing experiences:', error);
+    // Continue execution instead of throwing
   }
 }
 
-async function processEducation(tx: any, user: any, educations: any[]) {
-  const getEduKey = (edu: any) => `${edu.Degree}|${edu.Institution}|${edu.Year}`;
-  const existingEduKeys = (user?.education ?? []).map(
-    (edu: any) => `${edu.degree}|${edu.institution}|${edu.year}`
-  );
-
-  const educationToAdd = educations.filter(
-    (edu: any) => !existingEduKeys.includes(getEduKey(edu))
-  );
-
-  if (educationToAdd.length > 0) {
+async function processEducation(tx: any, profileId: string, educations: any[]) {
+  try {
     await tx.education.createMany({
-      data: educationToAdd.map((edu: any) => ({
-        userId: user.id,
-        degree: edu.Degree,
-        institution: edu.Institution,
-        year: edu.Year,
-        cgpa: edu.CGPA,
-      })),
+      data: educations
+        .filter((edu: any) => edu && typeof edu === 'object')
+        .map((edu: any) => ({
+          profileId: profileId,
+          degree: edu.Degree || 'Untitled Degree',
+          institution: edu.Institution || null,
+          year: edu.Year || null,
+          cgpa: typeof edu.CGPA === 'number' ? edu.CGPA : null,
+        })),
       skipDuplicates: true,
     });
+  } catch (error) {
+    console.error('Error processing education:', error);
+    // Continue execution instead of throwing
   }
 }

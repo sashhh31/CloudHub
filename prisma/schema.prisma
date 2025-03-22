@@ -11,39 +11,31 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id                String       @id @default(cuid())
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+
+model AiQuestionnaire {
+  id                  String     @id @default(cuid())
+  createdAt           DateTime   @default(now())
+  email               String?    
+  answers             String
   
-  // Basic Profile Information
-  name              String?
-  currentRole       String?
-  company           String?
-  email             String?      @unique
-  phoneNumber       String?
-  location          String?
-  
-  // Profile Assessment
-  profileAssessment ProfileAssessment?
-  
-  // Related data
-  skills            UserSkill[]
-  courses           Course[]
-  strengths         Strength[]
-  experience        Experience[]
-  education         Education[]
-  recommendedCourses RecommendedCourse[]
 }
 
-model ProfileAssessment {
-  id                  String   @id @default(cuid())
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+model Profile {
+  id                  String     @id @default(cuid())
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  
+  // Basic Profile Information
+  name                String?
+  currentRole         String?
+  company             String?
+  email               String?    @unique
+  phoneNumber         String?
+  location            String?
   
   // AI Score
   aiScoreTotal        Float
-  aiScoreAssessment   String   // "high", "medium", or "low"
+  aiScoreAssessment   String     // "high", "medium", or "low"
   
   // Other Assessment Fields
   skillsRelevance     String?
@@ -59,24 +51,26 @@ model ProfileAssessment {
   superpowers         String[]
   timelineBeforeAIImpact Int?
   
-  // Relation to User
-  userId              String   @unique
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relations
+  skills              Skill[]
+  courses             Course[]
+  strengths           Strength[]
+  experiences         Experience[]
+  education           Education[]
+  recommendedCourses  RecommendedCourse[]
 }
 
-model UserSkill {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Skill {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   
-  name      String
-  category  String   // "SoftSkill" or "TechnicalSkill"
+  name       String
+  category   String   // "SoftSkill" or "TechnicalSkill"
   
-  // Relation to User
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, name])
+  // Relation to Profile
+  profileId  String?
+  profile    Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
 }
 
 model Course {
@@ -87,9 +81,9 @@ model Course {
   title       String
   description String?
   
-  // Relation to User
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relation to Profile
+  profileId   String?
+  profile     Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
 }
 
 model Strength {
@@ -100,9 +94,9 @@ model Strength {
   skill     String
   rating    Int      // 0-5
   
-  // Relation to User
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relation to Profile
+  profileId String?
+  profile   Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
 }
 
 model RecommendedCourse {
@@ -114,9 +108,9 @@ model RecommendedCourse {
   link        String?
   description String?
   
-  // Relation to User
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relation to Profile
+  profileId   String?
+  profile     Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
 }
 
 model Experience {
@@ -129,9 +123,9 @@ model Experience {
   duration    String
   description String?
   
-  // Relation to User
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relation to Profile
+  profileId   String?
+  profile     Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
 }
 
 model Education {
@@ -144,7 +138,7 @@ model Education {
   year        String?
   cgpa        String?
   
-  // Relation to User
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relation to Profile
+  profileId   String?
+  profile     Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
 }

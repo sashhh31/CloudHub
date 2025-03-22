@@ -1,29 +1,16 @@
 import { type Metadata } from 'next'
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from '@clerk/nextjs'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { ProfileProvider } from '../context/ProfileContext';
 import './globals.css'
 import { Header } from '@/components/header'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
 
 export const metadata: Metadata = {
-  title: "CloudHub - AI Career Coach",
-  description: "Start for free, flexible for all teams.",
-    generator: 'v0.dev'
+  title: "KnowAI - AI Career Coach",
+  
 }
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin'],
 })
 
@@ -35,14 +22,12 @@ export default function RootLayout({
 }>) {
   return (
     <ProfileProvider>
-    <ClerkProvider>
       <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <body className={`${inter.variable} antialiased`}>
           <Header />
           {children}
         </body>
       </html>
-    </ClerkProvider>
     </ProfileProvider>
   )
 }

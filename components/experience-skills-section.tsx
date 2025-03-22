@@ -9,10 +9,9 @@ export function ExperienceSkillsSection() {
   let parsedData: any;
   try {
     parsedData = typeof message === 'string' ? JSON.parse(message) : message;
-    console.log(typeof message)
   } catch (error) {
     return (
-      <section className="w-full py-12 md:py-24">
+      <section className="w-full py-12 md:py-4">
         <div className="container px-4 md:px-6">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
             <strong className="font-bold">Error:</strong>
