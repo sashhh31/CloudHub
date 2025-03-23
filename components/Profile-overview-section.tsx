@@ -15,11 +15,9 @@ import {
 
 import { Mail, Phone, Download, Share2, Newspaper, ExternalLink, Linkedin } from "lucide-react"
 import React, { useRef, useState, useEffect } from 'react';
-import { parseProfileData } from "../utils/parseProfileData";
 import Link from "next/link";
 import { useProfile } from "@/context/ProfileContext";
 import html2canvas from 'html2canvas';
-import { prisma } from "@/lib/prisma"
 import axios from "axios"
 
 export function ProfileOverviewSection() {
@@ -33,8 +31,8 @@ export function ProfileOverviewSection() {
     parsedData = JSON.parse(message);
   } catch (error) {
     return (
-      <section className="w-full py-12 md:py-24 bg-white px-4 md:px-6">
-        <div className="container px-4 md:px-6">
+      <section className="w-full py-6 md:py-12 lg:py-24 bg-white px-4">
+        <div className="container mx-auto">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
             <strong className="font-bold">Error:</strong>
             <span className="block sm:inline"> Failed to parse profile data. Please try again.</span>
@@ -213,7 +211,6 @@ export function ProfileOverviewSection() {
         email,
         answers: answer,
       });
-      console.log(questionnaire);
       setTimeout(() => {
         setOpen(false);
         downloadProfileImage();
@@ -314,9 +311,9 @@ export function ProfileOverviewSection() {
   };
 
   return (
-    <section className="w-full py-12 md:py-16 bg-white px-36 md:px-36">
-      <div className="container px-4 md:px-6 ">
-        <div className="grid gap-8 md:grid-cols-2 ">
+    <section className="w-full py-6 md:py-12 bg-white px-4 md:px-6 lg:px-8">
+      <div className="container mx-auto">
+        <div className="grid gap-8 lg:grid-cols-2">
           {/* Left Column - Profile Info */}
           <div>
             <h2 className="text-2xl font-bold">{name}</h2>
@@ -329,7 +326,7 @@ export function ProfileOverviewSection() {
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Email</div>
-                  <div>{email}</div>
+                  <div className="break-all">{email}</div>
                 </div>
               </div>
 
@@ -343,13 +340,15 @@ export function ProfileOverviewSection() {
                 </div>
               </div>
             </div>
-            <div className="mt-8 rounded-2xl bg-gray-100 p-6 w-[250px] h-[200px]">
+            
+            {/* AI Score Card - Made responsive */}
+            <div className="mt-8 rounded-2xl bg-gray-100 p-6 w-full max-w-xs mx-auto sm:mx-0">
               <div className="flex flex-col items-center">
                 <div className="relative h-40 w-40">
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="flex flex-col items-center mt-3">
                       <div className="text-4xl font-semi-bold mb-2">{aiScore.Total}</div>
-                      <div className=" text-center font-bold">AI Score - {aiScore.Assessment}</div>
+                      <div className="text-center font-bold">AI Score - {aiScore.Assessment}</div>
                     </div>
                   </div>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
@@ -375,160 +374,175 @@ export function ProfileOverviewSection() {
                 </div>
               </div>
             </div>
+            
+            {/* Skills Bars - Made responsive */}
             <div className="mt-8 space-y-4">
-              <div className="flex">
-                <div className=" ">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="min-w-20">
                   <span>Soft Skills</span>
                 </div>
-                <div className="h-3 w-[300px] overflow-hidden rounded-full bg-gray-200 ml-[50px] mt-1">
+                <div className="h-3 w-full sm:w-60 md:w-80 overflow-hidden rounded-full bg-gray-200">
                   <div className="h-full rounded-full bg-blue-800" style={{ width: `${softSkillsScore}%` }}> </div>
                 </div>
-                <p className="ml-2 top-5 font-semibold text-sm">{softSkillsScore}%</p>
+                <p className="font-semibold text-sm">{softSkillsScore}%</p>
               </div>
 
-              <div className="flex">
-                <div className="">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="min-w-20">
                   <span>Technical Skills</span>
                 </div>
-                <div className="h-3 w-[300px] overflow-hidden rounded-full bg-gray-200 ml-4 mt-1">
+                <div className="h-3 w-full sm:w-60 md:w-80 overflow-hidden rounded-full bg-gray-200">
                   <div className="h-full rounded-full bg-blue-800" style={{ width: `${technicalSkillsScore}%` }}></div>
                 </div>
-                <p className="ml-2 top-5 font-semibold text-sm">{technicalSkillsScore}%</p>
+                <p className="font-semibold text-sm">{technicalSkillsScore}%</p>
               </div>
 
-              <div className="flex ">
-                <div className="">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="min-w-20">
                   <span>Relevance</span>
                 </div>
-                <div className="h-3 w-[300px] overflow-hidden rounded-full bg-gray-200 ml-[50px]  mt-1">
+                <div className="h-3 w-full sm:w-60 md:w-80 overflow-hidden rounded-full bg-gray-200">
                   <div className="h-full rounded-full bg-blue-800" style={{ width: `${relevanceScore}%` }}></div>
                 </div>
-                <p className="ml-2 top-5 font-semibold text-sm">{relevanceScore}%</p>
+                <p className="font-semibold text-sm">{relevanceScore}%</p>
               </div>
             </div>
-            <div className="mt-8 rounded-lg bg-gray-0 border-2 border-gray-200 p-4 w-[460px] space-y-5  ">
-              <div className="font-semibold text-lg flex gap-5">
-                <Newspaper className="h-5 w-5 mt-1 text-blue-500" />
-
-                Relevant Article Links
+            
+            {/* Article Box - Made responsive */}
+            <div className="mt-8 rounded-lg bg-gray-0 border-2 border-gray-200 p-4 w-full max-w-lg space-y-5">
+              <div className="font-semibold text-lg flex gap-2 items-center">
+                <Newspaper className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                <span>Relevant Article Links</span>
               </div>
-              <div className="flex">
+              <div className="break-words">
                 {Article.Title}
               </div>
-              <span className="flex-row flex justify-between text-blue-500">
-                <Link href={Article.Link} className="flex gap-2">
+              <span className="flex justify-between text-blue-500">
+                <Link href={Article.Link} className="flex gap-2 items-center">
                   <p>Read Full Article Here</p>
-                  <ExternalLink className="h-4 w-4 mt-1 " />
+                  <ExternalLink className="h-4 w-4" />
                 </Link>
               </span>
             </div>
           </div>
 
           {/* Right Column - Profile Details with download & share buttons */}
-          <div className="relative">
-            {/* Action buttons - positioned absolutely above the profile card */}
-            <div className="absolute top-[35px] right-4 flex space-x-2 z-10 ml-5 ">
-              <button
-                onClick={() => setShowQuestionnaireDialog(1)}
-                className="flex items-center gap-1 rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-              >
-                <Download className="h-4 w-4" />
-              </button>
-              <button
-                onClick={shareOnLinkedIn}
-                className="flex items-center gap-1 rounded-full bg-blue-100 px-4 py-2 text-sm font-medium text-blue-800 hover:bg-blue-200 transition-colors"
-              >
-                <Linkedin className="h-4 w-4" />
-              </button>
+          <div className="relative max-w-full mx-auto">
+  {/* Action buttons - fixed position relative to card */}
+  <div className="absolute top-12 right-4 flex space-x-2 z-10">
+    <button
+      onClick={() => setShowQuestionnaireDialog(1)}
+      className="flex items-center gap-1 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+    >
+      <Download className="h-4 w-4" />
+    </button>
+    <button
+      onClick={shareOnLinkedIn}
+      className="flex items-center gap-1 rounded-full bg-blue-100 px-4 py-2 text-sm font-medium text-blue-800 hover:bg-blue-200 transition-colors"
+    >
+      <Linkedin className="h-4 w-4" />
+    </button>
+  </div>
+
+  {/* Profile card with consistent styling */}
+  <div
+    ref={rightProfileRef}
+    className="bg-gradient-to-br from-blue-50 from-20% to-pink-100 rounded-xl shadow-sm mt-10 overflow-hidden w-full"
+  >
+    {/* Top section with personal info */}
+    <div className="rounded-lg p-6 grid grid-cols-1 md:grid-cols-2 gap-6 border-b-2 border-gray-200">
+      {/* Left column - personal details */}
+      <div>
+        <h1 className="text-2xl font-semibold">{name || "Anonymous"}</h1>
+
+        <div className="mt-4">
+          <div className="font-semibold mb-2">{experience[0].Role || "No role data available"}</div>
+          <div>{experience[0].Company || education[0].Institution || "No company data available"}</div>
+        </div>
+        
+        <div className="mt-4">
+          <div className="font-semibold mb-2">{education[0].Degree || "Computer Science Student"}</div>
+          <div>{education[0].Institution || "University"}</div>
+        </div>
+        
+        {/* Timeline prediction */}
+        <div className="mt-8 w-full rounded-lg flex flex-col gap-2">
+          <div className="flex flex-row items-center">
+            <div className="mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 50 50"
+                strokeWidth="fill:#000000;">
+                <path d="M 25 2 C 12.264481 2 2 12.264481 2 25 C 2 37.735519 12.264481 48 25 48 C 37.735519 48 48 37.735519 48 25 C 48 12.264481 37.735519 2 25 2 z M 25 4 C 36.664481 4 46 13.335519 46 25 C 46 36.664481 36.664481 46 25 46 C 13.335519 46 4 36.664481 4 25 C 4 13.335519 13.335519 4 25 4 z M 24.984375 6.9863281 A 1.0001 1.0001 0 0 0 24 8 L 24 22.173828 C 22.81904 22.572762 22 23.655572 22 25 C 22 25.471362 22.108361 25.906202 22.289062 26.296875 L 16.292969 32.292969 A 1.0001 1.0001 0 1 0 17.707031 33.707031 L 23.703125 27.710938 C 24.093798 27.891639 24.528638 28 25 28 C 26.7 28 28 26.7 28 25 C 28 23.655572 27.18096 22.572762 26 22.173828 L 26 8 A 1.0001 1.0001 0 0 0 24.984375 6.9863281 z"></path>
+              </svg>
             </div>
-
-            {/* Right Profile - will be downloadable */}
-            <div
-              ref={rightProfileRef}
-              className="bg-gradient-to-br from-blue-50 from-20% to-pink-100 rounded-xl shadow-sm"
-            >
-              <div className="rounded-lg p-8 h-fit grid grid-cols-2 gap-4 border-b-2 border-gray-200 ">
-                <div>
-                  <h1 className="text-3xl font-semibold">{name || "Anonymous"}</h1>
-
-                  <div className="mt-4 gap-8">
-                    <div className="font-semibold mb-3">{experience[0].Role || "No role data available"}</div>
-                    <div>{experience[0].Company || education[0].Institution || "No company data available"}</div>
-                  </div>
-                  <div className="mt-4 ">
-                    <div className="font-semibold mb-3">{education[0].Degree || "Computer Science Student"}</div>
-                    <div>{education[0].Institution || "University"}</div>
-                  </div>
-                  <div className="h-32 mt-10 w-fit  rounded-lg justify-evenly flex flex-col gap-3">
-                    <div className="flex flex-row mr-3">
-                      <div className=" mt-1 mr-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="20" height="20" viewBox="0 0 50 50"
-                          strokeWidth="fill:#000000;">
-                          <path d="M 25 2 C 12.264481 2 2 12.264481 2 25 C 2 37.735519 12.264481 48 25 48 C 37.735519 48 48 37.735519 48 25 C 48 12.264481 37.735519 2 25 2 z M 25 4 C 36.664481 4 46 13.335519 46 25 C 46 36.664481 36.664481 46 25 46 C 13.335519 46 4 36.664481 4 25 C 4 13.335519 13.335519 4 25 4 z M 24.984375 6.9863281 A 1.0001 1.0001 0 0 0 24 8 L 24 22.173828 C 22.81904 22.572762 22 23.655572 22 25 C 22 25.471362 22.108361 25.906202 22.289062 26.296875 L 16.292969 32.292969 A 1.0001 1.0001 0 1 0 17.707031 33.707031 L 23.703125 27.710938 C 24.093798 27.891639 24.528638 28 25 28 C 26.7 28 28 26.7 28 25 C 28 23.655572 27.18096 22.572762 26 22.173828 L 26 8 A 1.0001 1.0001 0 0 0 24.984375 6.9863281 z"></path>
-                        </svg>
-                      </div>
-                      <h2 className="text-center text-lg text-gray-400 font-semibold">Timeline Prediction</h2>
-                    </div>
-                    <h1 className=" text-2xl ml-12 font-semibold">{timelinePrediction} Years</h1>
-                    <h2 className="font-semibold  text-gray-900">Before Significant AI Impact</h2>
-                  </div>
-                </div>
-                <div className="mt-7">
-                  <div className="mt-6">
-                    {superpowers && (
-                      <div>
-                        <h2 className="mb-4 text-lg font-semibold text-gray-400">Superpowers</h2>
-                        <div className=" rounded-lg">
-                          <ul className="list-disc space-y-5 font-semibold text-gray-900">
-                            {superpowers}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-                    <div className="text-lg font-medium text-gray-400 mt-10">Top Skills</div>
-                    <div className="mt-4 gap-2 mr-3">
-                      {topSkills.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {topSkills.map((skill:any, index:number) => (
-                            <div
-                              key={index}
-                              className="text-gray-900 font-semibold px-1 rounded-full"
-                            >
-                              {skill}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="pr-8 pl-8 pt-8 pb-4 ">
-                <h2 className="mb-4 text-lg font-semibold text-gray-400">Best Achievements</h2>
-                <div className=" rounded-lg">
-                  <ul className="list-disc space-y-2 font-semibold text-black ">
-                    <p>{bestAchievements}</p>
-                  </ul>
-                </div>
-              </div>
-              <div className=" pr-8 pl-8 pb-8 ">
-                <div className="mb-4 text-lg font-semibold text-gray-400">Tools</div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {tools.slice(0, 10).map((skill:any , i:number) => (
-                    <div key={i} className="rounded font-semibold text-gray-900 py-1 mr-5 text-base">
-                      {String(skill).split('(')[0].trim()}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="text-center pr-8 pl-8 pb-8 ">
-                Get your profile analysis at
-                <Link href="https://scan.knowai.com" >
-                  <span className="font-bold"> scan.knowai.com</span>
-                </Link>
-              </div>
+            <h2 className="text-lg text-gray-400 font-semibold">Timeline Prediction</h2>
+          </div>
+          <h1 className="text-2xl font-semibold md:ml-6">{timelinePrediction} Years</h1>
+          <h2 className="font-semibold text-gray-900">Before Significant AI Impact</h2>
+        </div>
+      </div>
+      
+      {/* Right column - skills and superpowers */}
+      <div className="mt-4 md:mt-0">
+        {superpowers && (
+          <div>
+            <h2 className="mb-4 text-lg font-semibold text-gray-400">Superpowers</h2>
+            <div className="rounded-lg">
+              <ul className="list-disc space-y-2 md:space-y-4 font-semibold text-gray-900 pl-5">
+                {superpowers}
+              </ul>
             </div>
           </div>
+        )}
+        
+        <div className="text-lg font-medium text-gray-400 mt-8">Top Skills</div>
+        <div className="mt-3">
+          {topSkills.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {topSkills.map((skill:any, index:number) => (
+                <div
+                  key={index}
+                  className="text-gray-900 font-semibold px-1 rounded-full"
+                >
+                  {skill}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+    
+    {/* Achievements section */}
+    <div className="px-6 pt-6 pb-4">
+      <h2 className="mb-4 text-lg font-semibold text-gray-400">Best Achievements</h2>
+      <div className="rounded-lg">
+        <div className="space-y-2 font-semibold text-black">
+          <p>{bestAchievements}</p>
+        </div>
+      </div>
+    </div>
+    
+    {/* Tools section */}
+    <div className="px-6 pb-6">
+      <div className="mb-4 text-lg font-semibold text-gray-400">Tools</div>
+      <div className="mt-2 flex flex-wrap gap-y-2 gap-x-4">
+        {tools.slice(0, 10).map((skill:any, i:number) => (
+          <div key={i} className="rounded font-semibold text-gray-900 py-1">
+            {String(skill).split('(')[0].trim()}
+          </div>
+        ))}
+      </div>
+    </div>
+    
+    {/* Footer */}
+    <div className="text-center px-6 pb-6">
+      Get your profile analysis at
+      <Link href="https://scan.knowai.com">
+        <span className="font-bold"> scan.knowai.com</span>
+      </Link>
+    </div>
+  </div>
+</div>
         </div>
       </div>
 

@@ -96,14 +96,14 @@ export function ProfileAnalysisSection() {
       
       return (
         <div className="flex items-center">
-          <div className="text-yellow-600 mr-2">{starString}</div>
-          <div className="h-2 w-full max-w-24 overflow-hidden rounded-full text-yellow-800">
-            <div 
-              className="h-full rounded-full bg-yellow-400" 
-              style={{ width: `${percentage}%` }}
-            ></div>
-          </div>
+        <div className="text-yellow-600 mr-2">{starString}</div>
+        <div className="h-2 w-full max-w-24 overflow-hidden rounded-full text-yellow-800">
+          <div 
+            className="h-full rounded-full bg-yellow-400" 
+            style={{ width: `${percentage}%` }}
+          ></div>
         </div>
+      </div>
       );
     }
     
@@ -116,94 +116,94 @@ export function ProfileAnalysisSection() {
       
       return (
         <div className="flex items-center">
-          <div className="text-yellow-600 mr-2">{rating}</div>
-          <div className="h-2 w-full max-w-24 overflow-hidden rounded-full text-yellow-800">
-            <div 
-              className="h-full rounded-full bg-yellow-400" 
-              style={{ width: `${percentage}%` }}
-            ></div>
-          </div>
+        <div className="text-yellow-600 mr-2">{rating}</div>
+        <div className="h-2 w-full max-w-24 overflow-hidden rounded-full text-yellow-800">
+          <div 
+            className="h-full rounded-full bg-yellow-400" 
+            style={{ width: `${percentage}%` }}
+          ></div>
         </div>
+      </div>
       );
     }
     
     // Fallback for any other type
     return (
       <div className="flex items-center">
-        <div className="text-yellow-600 mr-2">N/A</div>
-        <div className="h-2 w-full max-w-24 overflow-hidden rounded-full text-yellow-800">
-          <div className="h-full rounded-full bg-gray-300" style={{ width: '0%' }}></div>
-        </div>
+      <div className="text-yellow-600 mr-2">N/A</div>
+      <div className="h-2 w-full max-w-24 overflow-hidden rounded-full text-yellow-800">
+        <div className="h-full rounded-full bg-gray-300" style={{ width: '0%' }}></div>
       </div>
+    </div>
     );
   }
     return (
-    <div className="w-full">
+  <div className="w-full">
       
       
       {/* Main Content */}
-      <section className="bg-white p-6 rounded-b-lg shadow-md px-32 py-24">
+      <section className="bg-white p-4 sm:p-6 rounded-b-lg shadow-md px-4 sm:px-6 md:px-8 lg:px-16 xl:px-32 py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24">
         <div className="container mx-auto">
           {/* Grid Layout */}
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
             {/* Left Column */}
-            <div className="space-y-8">
+            <div className="space-y-6 md:space-y-8">
       
               
               {/* Career Analysis */}
               {summary && (
                 <div>
-                  <h2 className="mb-4 text-xl font-bold border-b pb-2">Summary</h2>
-                  <div className="bg-purple-100 p-4 rounded-lg">
-                    <p>{summary}</p>
+                  <h2 className="mb-3 md:mb-4 text-lg md:text-xl font-bold border-b pb-2">Summary</h2>
+                  <div className="bg-purple-100 p-3 md:p-4 rounded-lg">
+                    <p className="text-sm md:text-base">{summary}</p>
                   </div>
                 </div>
               )}
               {remarks && (
                 <div>
-                  <h2 className="mb-4 text-xl font-bold border-b pb-2">Remarks</h2>
-                  <div className="bg-yellow-100 p-4 rounded-lg">
-                    <p>{remarks}</p>
+                  <h2 className="mb-3 md:mb-4 text-lg md:text-xl font-bold border-b pb-2">Remarks</h2>
+                  <div className="bg-yellow-100 p-3 md:p-4 rounded-lg">
+                    <p className="text-sm md:text-base">{remarks}</p>
                   </div>
                 </div>
               )}
             {strengths.length > 0 && (
-  <div>
-    <h2 className="mb-4 text-xl font-bold border-b pb-2">Strengths</h2>
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <div className="space-y-3">
-        {strengths.map((strength: any, index: number) => (
-          <div key={index} className="flex flex-col">
-            <div className="font-medium">{strength.skill}</div>
-            {renderStarRating(strength.rating)}
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-)}
+              <div>
+                <h2 className="mb-3 md:mb-4 text-lg md:text-xl font-bold border-b pb-2">Strengths</h2>
+                <div className="bg-gray-50 p-3 md:p-4 rounded-lg">
+                  <div className="space-y-2 md:space-y-3">
+                    {strengths.map((strength: any, index: number) => (
+                      <div key={index} className="flex flex-col">
+                        <div className="font-medium text-sm md:text-base">{strength.skill}</div>
+                        {renderStarRating(strength.rating)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
               {careerAnalysis && (
                 <div>
-                  <h2 className="mb-4 text-xl font-bold border-b pb-2">Career Trajectory</h2>
-                  <div className="bg-gray-100 p-4 rounded-lg">
-                    <p>{careerAnalysis}</p>
+                  <h2 className="mb-3 md:mb-4 text-lg md:text-xl font-bold border-b pb-2">Career Trajectory</h2>
+                  <div className="bg-gray-100 p-3 md:p-4 rounded-lg">
+                    <p className="text-sm md:text-base">{careerAnalysis}</p>
                   </div>
                 </div>
               )}
             </div>
             
             {/* Right Column */}
-            <div className="space-y-8">
+            <div className="space-y-6 md:space-y-8">
               {/* Skills Section */}
               <div>
                 
                 {/* Top Skills */}
                 {topSkills.length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="mb-2 text-lg font-medium">Top Skills</h3>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="mb-3 md:mb-4">
+                    <h3 className="mb-2 text-base md:text-lg font-medium">Top Skills</h3>
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
                       {topSkills.map((skill:any, index:number) => (
-                        <div key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                        <div key={index} className="bg-blue-100 text-blue-800 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm">
                           {skill}
                         </div>
                       ))}
@@ -213,11 +213,11 @@ export function ProfileAnalysisSection() {
                 
                 {/* Technical Skills */}
                 {technicalSkills.length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="mb-2 text-lg font-medium">Technical Skills</h3>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="mb-3 md:mb-4">
+                    <h3 className="mb-2 text-base md:text-lg font-medium">Technical Skills</h3>
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
                       {technicalSkills.map((skill:any, index:number) => (
-                        <div key={index} className="bg-yellow-200 px-3 py-1 rounded-full">
+                        <div key={index} className="bg-yellow-200 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm">
                           {skill}
                         </div>
                       ))}
@@ -227,11 +227,11 @@ export function ProfileAnalysisSection() {
                 
                 {/* Soft Skills */}
                 {softSkills.length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="mb-2 text-lg font-medium">Soft Skills</h3>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="mb-3 md:mb-4">
+                    <h3 className="mb-2 text-base md:text-lg font-medium">Soft Skills</h3>
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
                       {softSkills.map((skill:any, index:number) => (
-                        <div key={index} className="bg-green-100 text-green-800 px-3 py-1 rounded-full">
+                        <div key={index} className="bg-green-100 text-green-800 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm">
                           {skill}
                         </div>
                       ))}
@@ -248,11 +248,11 @@ export function ProfileAnalysisSection() {
               {/* Skill Gaps */}
               {skillGaps.length > 0 && (
                 <div>
-                  <h2 className="mb-4 text-xl font-semibold border-b pb-2">Skill Gaps</h2>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <ul className="list-disc pl-5 space-y-1">
+                  <h2 className="mb-3 md:mb-4 text-lg md:text-xl font-semibold border-b pb-2">Skill Gaps</h2>
+                  <div className="bg-gray-50 p-3 md:p-4 rounded-lg">
+                    <ul className="list-disc pl-4 md:pl-5 space-y-1">
                       {skillGaps.map((gap, index) => (
-                        <li key={index}>{gap}</li>
+                        <li key={index} className="text-sm md:text-base">{gap}</li>
                       ))}
                     </ul>
                   </div>
@@ -264,11 +264,11 @@ export function ProfileAnalysisSection() {
               {/* Achievements */}
               {bestAchievements.length > 0 && (
                 <div>
-                  <h2 className="mb-4 text-xl font-bold border-b pb-2">Best Achievements</h2>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <ul className="list-disc pl-5 space-y-2">
+                  <h2 className="mb-3 md:mb-4 text-lg md:text-xl font-bold border-b pb-2">Best Achievements</h2>
+                  <div className="bg-gray-50 p-3 md:p-4 rounded-lg">
+                    <ul className="list-disc pl-4 md:pl-5 space-y-1 md:space-y-2">
                       {bestAchievements.map((achievement:any, index:number) => (
-                        <li key={index}>{achievement}</li>
+                        <li key={index} className="text-sm md:text-base">{achievement}</li>
                       ))}
                     </ul>
                   </div>

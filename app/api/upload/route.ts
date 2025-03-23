@@ -57,14 +57,12 @@ export async function POST(request: Request) {
     const linkedinUrl = formData.get("linkedinUrl");
     const fileType = formData.get("fileType");
     
-    console.log("Request received with file type:", fileType);
     
     // Initialize profileText as an array to collect data from both sources
     let profileData = [];
     
     // Process extracted text if available
     if (extractedText && typeof extractedText === 'string' && extractedText.trim() !== '') {
-      console.log("Processing extracted text from form");
       profileData.push({
         source: "resume",
         content: extractedText
@@ -73,7 +71,6 @@ export async function POST(request: Request) {
     
     // Process LinkedIn URL if available
     if (linkedinUrl && typeof linkedinUrl === 'string' && linkedinUrl.trim() !== '') {
-      console.log("Processing LinkedIn URL:", linkedinUrl);
       
       try {
         const username = extractLinkedInUsername(linkedinUrl);
@@ -206,7 +203,6 @@ async function processProfileWithAI(openai: OpenAI, profileText: string) {
   `;
 
   try {
-    console.log("Calling OpenAI API...");
     // Call OpenAI API with error handling and timeout
     const completion = await Promise.race([
       openai.chat.completions.create({
