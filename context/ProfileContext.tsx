@@ -4,12 +4,12 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 // Define types for your profile data
 export interface ProfileData {
   analysis: string;
-  // Add other fields if needed
 }
 
+// Modified type to include "processing" as a possible value
 interface ProfileContextType {
   profileData: ProfileData | null;
-  setProfileData: (data: ProfileData) => void;
+  setProfileData: (data: ProfileData ) => void; // Accept "processing" string too
   clearProfileData: () => void;
 }
 
@@ -28,35 +28,16 @@ interface ProfileProviderProps {
 }
 
 export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) => {
+  // Changed state type to match context type
   const [profileData, setProfileDataState] = useState<ProfileData | null>(null);
 
-  // Get initial data from localStorage if available (for page refreshes)
-  React.useEffect(() => {
-    try {
-      const savedData = localStorage.getItem('profileAnalysis');
-      if (savedData) {
-        setProfileDataState({ analysis: savedData });
-      }
-    } catch (error) {
-      console.error('Error loading profile data from localStorage:', error);
-    }
-  }, []);
-
-  const setProfileData = (data: ProfileData) => {
-    // Update state
+  // Updated to accept the processing string
+  const setProfileData = (data: ProfileData ) => {
     setProfileDataState(data);
-    
-    // Also save to localStorage as a fallback for page refreshes
-    try {
-      localStorage.setItem('profileAnalysis', data.analysis);
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
   };
 
   const clearProfileData = () => {
     setProfileDataState(null);
-    localStorage.removeItem('profileAnalysis');
   };
 
   return (

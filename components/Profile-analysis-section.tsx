@@ -142,7 +142,7 @@ export function ProfileAnalysisSection() {
       
       
       {/* Main Content */}
-      <section className="bg-white p-4 sm:p-6 rounded-b-lg shadow-md px-4 sm:px-6 md:px-8 lg:px-16 xl:px-32 py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24">
+      <section className="bg-white p-4 sm:p-6 rounded-b-lg shadow-md px-4 sm:px-6 md:px-8 lg:px-16  py-8 sm:py-12 md:py-16 lg:py-20 xl:py-24">
         <div className="container mx-auto">
           {/* Grid Layout */}
           <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">

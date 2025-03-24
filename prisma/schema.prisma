@@ -50,6 +50,8 @@ model Profile {
   summary             String?
   superpowers         String[]
   timelineBeforeAIImpact Int?
+  PercentageOfWorkAutomable Int?
+  CurrentAutomableTask Int?
   
   // Relations
   skills              Skill[]

@@ -19,16 +19,17 @@ import Link from "next/link";
 import { useProfile } from "@/context/ProfileContext";
 import html2canvas from 'html2canvas';
 import axios from "axios"
+import { sendEmail } from "@/lib/resend"
 
 export function ProfileOverviewSection() {
   const [showQuestionnaireDialog, setShowQuestionnaireDialog] = useState(0);
   const { profileData } = useProfile();
   const message = profileData?.analysis || '';
   const rightProfileRef = useRef(null);
-  let parsedData;
+  let parsedData : any;
 
   try {
-    parsedData = JSON.parse(message);
+    parsedData = typeof message === 'string' ? JSON.parse(message) : message;
   } catch (error) {
     return (
       <section className="w-full py-6 md:py-12 lg:py-24 bg-white px-4">
@@ -45,7 +46,7 @@ export function ProfileOverviewSection() {
   // Extract data from the parsed object
   const BasicProfileInformation = Array.isArray(parsedData.BasicProfileInformation) ? parsedData.BasicProfileInformation :
     parsedData.BasicProfileInformation ? [parsedData.BasicProfileInformation] : [];
-  const name = BasicProfileInformation[0].Name || 'No name data available';
+  const name = BasicProfileInformation[0].Name || 'Anonymous';
   const currentRole = BasicProfileInformation[0].CurrentRole || 'No current role data available';
   const company = BasicProfileInformation[0].Company || 'No company data available';
   const email = BasicProfileInformation[0].Email || 'No email data available';
@@ -79,6 +80,8 @@ export function ProfileOverviewSection() {
   const technicalSkillsScore = 80;
   const relevanceScore = relevance?.includes('highly relevant') ? 90 : 70;
   const timelinePrediction = parsedData.TimelineBeforeSignificantAIImpact || '0';
+  const currentAutomated= parsedData.CurrentAutomableTask || '0';
+  const PercentageOfWorkAutomable= parsedData.PercentageOfWorkAutomable||'0';
   const Article = parsedData.Article
   const aiImpactPattern = /(\d+)%/;
   const aiImpactText = typeof aiImpact === 'string' ? aiImpact : '';
@@ -216,6 +219,9 @@ export function ProfileOverviewSection() {
         downloadProfileImage();
       }, 1000);
     };
+    useEffect(() => {
+      sendEmail(email, name); 
+    }, [email, name]);
 
     return (
       <Dialog open={open} onOpenChange={(isOpen) => {
@@ -429,7 +435,7 @@ export function ProfileOverviewSection() {
           {/* Right Column - Profile Details with download & share buttons */}
           <div className="relative max-w-full mx-auto">
   {/* Action buttons - fixed position relative to card */}
-  <div className="absolute top-12 right-4 flex space-x-2 z-10">
+  <div className="absolute md:top-12 md:right-4 flex space-x-2 z-10">
     <button
       onClick={() => setShowQuestionnaireDialog(1)}
       className="flex items-center gap-1 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
@@ -464,30 +470,36 @@ export function ProfileOverviewSection() {
           <div className="font-semibold mb-2">{education[0].Degree || "Computer Science Student"}</div>
           <div>{education[0].Institution || "University"}</div>
         </div>
-        
-        {/* Timeline prediction */}
-        <div className="mt-8 w-full rounded-lg flex flex-col gap-2">
-          <div className="flex flex-row items-center">
-            <div className="mr-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 50 50"
-                strokeWidth="fill:#000000;">
-                <path d="M 25 2 C 12.264481 2 2 12.264481 2 25 C 2 37.735519 12.264481 48 25 48 C 37.735519 48 48 37.735519 48 25 C 48 12.264481 37.735519 2 25 2 z M 25 4 C 36.664481 4 46 13.335519 46 25 C 46 36.664481 36.664481 46 25 46 C 13.335519 46 4 36.664481 4 25 C 4 13.335519 13.335519 4 25 4 z M 24.984375 6.9863281 A 1.0001 1.0001 0 0 0 24 8 L 24 22.173828 C 22.81904 22.572762 22 23.655572 22 25 C 22 25.471362 22.108361 25.906202 22.289062 26.296875 L 16.292969 32.292969 A 1.0001 1.0001 0 1 0 17.707031 33.707031 L 23.703125 27.710938 C 24.093798 27.891639 24.528638 28 25 28 C 26.7 28 28 26.7 28 25 C 28 23.655572 27.18096 22.572762 26 22.173828 L 26 8 A 1.0001 1.0001 0 0 0 24.984375 6.9863281 z"></path>
-              </svg>
+        {currentAutomated && (
+          <div className="mt-10">
+            <h2 className="mb-4 text-lg font-semibold text-gray-400">Current AI exposure</h2>
+            <div className="rounded-lg">
+              <ul className="list-disc space-y-2 md:space-y-4 font-semibold text-gray-900 ">
+              Your role is {currentAutomated}% automatable today
+              </ul>
             </div>
-            <h2 className="text-lg text-gray-400 font-semibold">Timeline Prediction</h2>
           </div>
-          <h1 className="text-2xl font-semibold md:ml-6">{timelinePrediction} Years</h1>
-          <h2 className="font-semibold text-gray-900">Before Significant AI Impact</h2>
-        </div>
+        )}
+        {timelinePrediction && (
+          <div className="mt-4">
+            <h2 className="mb-4 text-lg font-semibold text-gray-400">Future timeline</h2>
+            <div className="rounded-lg">
+              <ul className="list-disc space-y-2 md:space-y-4 font-semibold text-gray-900 ">
+              By {timelinePrediction}, {PercentageOfWorkAutomable}% of tasks will be replaced or enhanced by AI.
+              </ul>
+            </div>
+          </div>
+        )}
+ 
       </div>
       
       {/* Right column - skills and superpowers */}
-      <div className="mt-4 md:mt-0">
+      <div className="mt-4 md:mt-11">
         {superpowers && (
           <div>
             <h2 className="mb-4 text-lg font-semibold text-gray-400">Superpowers</h2>
             <div className="rounded-lg">
-              <ul className="list-disc space-y-2 md:space-y-4 font-semibold text-gray-900 pl-5">
+              <ul className="list-disc space-y-2 md:space-y-4 font-semibold text-gray-900 ">
                 {superpowers}
               </ul>
             </div>

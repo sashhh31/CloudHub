@@ -1,11 +1,23 @@
+"use client"
 import { CtaSection } from "@/components/cta-section"
 import { FeatureSection } from "@/components/feature-section"
 import { FeedbackSection } from "@/components/feedback-section"
 import { ProjectSection } from "@/components/project-section"
 import { Footer } from "@/components/footer"
 import HeroSection from "@/components/HeroSection"
+import { LoadingScreen } from "@/components/LoadingScreen"
+import { useProfile } from "@/context/ProfileContext"
 
 export default function Home() {
+  const { profileData } = useProfile();
+
+  // Check if profileData is exactly the string "processing"
+  if (profileData?.analysis === "processing") {
+    return <LoadingScreen message="Analyzing your profile..." />;
+  }
+
+
+
   return (
     <main className="flex min-h-screen flex-col w-full">
       <HeroSection />

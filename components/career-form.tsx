@@ -229,12 +229,13 @@ export function CareerForm() {
       
       // Always append the file
       formData.append('resume', file);
-      formData.append('fileType', fileType);
+      // formData.append('fileType', fileType);
       
       if (extractedText && (fileType === 'pdf' || fileType === 'txt' || fileType === 'json')) {
         formData.append('extractedText', extractedText);
       }
-      
+      setProfileData({ analysis: "processing" });
+
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -251,6 +252,7 @@ export function CareerForm() {
       if (!data.analysis) {
         throw new Error('No analysis data received from server');
       }
+      console.log(data.analysis)
       
       // Update context instead of using localStorage directly
       setProfileData({ analysis: data.analysis.analysis });

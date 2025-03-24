@@ -115,7 +115,7 @@ export async function POST(request: Request) {
     }
     
     // Store in database asynchronously
-    const dbPromise = storeProfileInDatabase(analysisResult.analysis);
+    storeProfileInDatabase(analysisResult.analysis);
     // Don't await - let it run in the background
     
     return NextResponse.json({ 
@@ -198,7 +198,9 @@ async function processProfileWithAI(openai: OpenAI, profileText: string) {
       "Education": [
         {"Degree": "", "Institution": "", "Year": "", "CGPA": ""}
       ],
-      "TimelineBeforeSignificantAIImpact": 0 // Number of years it will take to have a significant impact with AI just number
+      "TimelineBeforeSignificantAIImpact": 0 // By which year AI will have a significant impact on the career of the person with skills data provided
+      "PercentageOfWorkAutomable":0 //Take reference from TimelineBeforeSignificantAIImpact and predict how much percentage of work will be replaced by ai that year
+      "CurrentAutomableTask":0 //Currently how much work can be automated in percentage of the person data provided
     }
   `;
 
@@ -225,9 +227,12 @@ async function processProfileWithAI(openai: OpenAI, profileText: string) {
       throw new Error('Invalid response from OpenAI');
     }
 
-    const messageContent = (completion as any).choices[0]?.message?.content;
+    let messageContent = (completion as any).choices[0]?.message?.content;
     if (!messageContent) {
       throw new Error('No content received from OpenAI');
+    }
+    if (typeof messageContent=='string'){
+      messageContent=JSON.parse(messageContent)
     }
 
     // Parse and validate the JSON response
@@ -280,7 +285,9 @@ async function storeProfileInDatabase(analysisData: any) {
       Superpowers = [],
       Experience = [],
       Education = [],
-      TimelineBeforeSignificantAIImpact = null
+      TimelineBeforeSignificantAIImpact = null,
+      PercentageOfWorkAutomable=null,
+      CurrentAutomableTask= null
     } = analysisData;
 
     // Use transaction for data consistency
@@ -312,7 +319,9 @@ async function storeProfileInDatabase(analysisData: any) {
           topSkills: Array.isArray(TopSkills) ? TopSkills : [],
           summary: Summary || null,
           superpowers: Array.isArray(Superpowers) ? Superpowers : [],
-          timelineBeforeAIImpact: TimelineBeforeSignificantAIImpact || null
+          timelineBeforeAIImpact: TimelineBeforeSignificantAIImpact || null,
+          PercentageOfWorkAutomable: PercentageOfWorkAutomable || null,
+          CurrentAutomableTask:CurrentAutomableTask || null
         }
       });
       
