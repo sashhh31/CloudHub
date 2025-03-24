@@ -21,13 +21,13 @@ export async function sendEmail(email: string, customerName: string) {
             <p>Let us know what you think—we're always here to support your next move.</p>
             <p>To your future,</p>
             <p><strong>Founder | Manshri Chanakya Gollapalli</strong></p>
-            <p>8013183869 | <a href="info@urimsoftsol.com">info@urimsoftsol.com</a></p>
+            <p>+91 8013183869 | <a href="info@urimsoftsol.com">info@urimsoftsol.com</a></p>
             <p style="color: #777; font-size: 0.9em;">&copy; 2025 Know AI. All rights reserved.</p>
         </div>
     `;
 
     const response = await resend.emails.send({
-        from: "Acme <onboarding@resend.dev>",
+        from: "thKnowAi info@urimsoftsol.com",
         to: email,
         subject: "Your AI Impact Report is Ready! 🚀",
         html: htmlContent,  
