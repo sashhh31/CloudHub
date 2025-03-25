@@ -27,7 +27,7 @@ export async function sendEmail(email: string, customerName: string) {
     `;
 
     const response = await resend.emails.send({
-        from: "thKnowAi info@urimsoftsol.com",
+        from: "thKnowAi <info@urimsoftsol.com>",
         to: email,
         subject: "Your AI Impact Report is Ready! 🚀",
         html: htmlContent,  
