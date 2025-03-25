@@ -18,7 +18,7 @@ export async function sendEmail(email: string, customerName: string) {
                 <li>Actionable insights to stay ahead of the curve</li>
                 <li>Suggested tools and skills to upskill with confidence</li>
             </ul>
-            <p><a href="https://scan.knowai.in/result" style="display: inline-block; background: #3498db; color: #ffffff; padding: 10px 15px; text-decoration: none; border-radius: 5px;">👉 Download Your Report</a></p>
+            <p><a href="https://scan.theknowai.com/result" style="display: inline-block; background: #3498db; color: #ffffff; padding: 10px 15px; text-decoration: none; border-radius: 5px;">👉 Download Your Report</a></p>
             <p>We built this report with your career growth in mind. If you have any questions or want a 1-on-1 consultation to go over your insights, we'd love to help.</p>
             <p>Let us know what you think—we're always here to support your next move.</p>
             <p>To your future,</p>
