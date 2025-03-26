@@ -204,6 +204,7 @@ export function CareerForm() {
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    localStorage.removeItem('profileData');
     e.preventDefault();
     
     // Check that both LinkedIn URL and file are provided
