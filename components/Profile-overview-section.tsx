@@ -105,26 +105,30 @@ export function ProfileOverviewSection() {
     }
   });
 
+useEffect(()=>{
 
   const download = async () => {
     if (rightProfileRef.current) {
       await document.fonts.ready; // Ensure fonts are loaded
-  
+      
       const canvas = await html2canvas(rightProfileRef.current, {
         scale: 3, // Higher scale for better quality
         backgroundColor: null,
         useCORS: true,
         logging: true, // Debugging info
       });
-  
+      
       const image = canvas.toDataURL("image/png"); // Convert canvas to Base64
-  
+      
       // Send image to backend for storage
-     const response= await axios.post("/api/save-image",  JSON.stringify({ image , name:name }) 
-      );
+      const response= await axios.post("/api/save-image",  JSON.stringify({ image , name:name }) )
+      console.log(response.data,'yes done')
       setImagelink(response.data)
+      
     }
   };
+  download();
+},[])
   
   // Function to download the right profile as an image
   const downloadProfileImage = async () => {
@@ -215,6 +219,8 @@ export function ProfileOverviewSection() {
       setOpen(showQuestionnaireDialog > 0);
     }, [showQuestionnaireDialog]);
 
+ 
+
     const validateEmail = (email:string) => {
       const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       return regex.test(email);
@@ -246,15 +252,12 @@ export function ProfileOverviewSection() {
         email,
         answers: answer,
       });
+          sendEmail(email, name, imagelink);
       setTimeout(() => {
-        downloadProfileImage();
         setOpen(false);
+        downloadProfileImage();
       }, 1000);
     };
-
-    useEffect(() => {
-      sendEmail(email, name,imagelink); 
-    }, [email, name]);
 
     return (
       <Dialog open={open} onOpenChange={(isOpen) => {
@@ -472,7 +475,6 @@ export function ProfileOverviewSection() {
     <button
       onClick={() => {
         setShowQuestionnaireDialog(1);
-        download();
       }}
       className="flex items-center gap-1 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
     >
@@ -521,7 +523,7 @@ export function ProfileOverviewSection() {
             <h2 className="mb-4 text-lg font-semibold text-gray-400">Future timeline</h2>
             <div className="rounded-lg">
               <ul className="list-disc space-y-2 md:space-y-4 font-semibold text-gray-900 ">
-              By {timelinePrediction}, {PercentageOfWorkAutomable}% of tasks will be replaced or enhanced by AI.
+              By {timelinePrediction}, {PercentageOfWorkAutomable}% of tasks will be replaced or enhanced by AI.
               </ul>
             </div>
           </div>

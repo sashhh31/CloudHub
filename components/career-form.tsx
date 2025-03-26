@@ -253,7 +253,6 @@ export function CareerForm() {
       if (!data.analysis) {
         throw new Error('No analysis data received from server');
       }
-      console.log(data.analysis)
       
       // Update context instead of using localStorage directly
       setProfileData({ analysis: data.analysis.analysis });

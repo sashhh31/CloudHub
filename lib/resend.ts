@@ -30,7 +30,7 @@ export async function sendEmail(email: string, customerName: string, image: stri
 
     const response = await resend.emails.send({
         from: "TheknowAI <noreply@scan.theknowai.com>",
-        to: [`${email}`], 
+        to: [email], 
         subject: "Your AI Impact Report is Ready! 🚀",
         html: htmlContent,
         attachments: [
