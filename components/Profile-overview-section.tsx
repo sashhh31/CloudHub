@@ -588,7 +588,7 @@ useEffect(()=>{
     <div className="text-center px-6 pb-3 md:pb-6">
       Get your profile analysis at
       <Link href="https://scan.theknowai.com/">
-        <span className="font-bold"> scan.knowai.com</span>
+        <span className="font-bold"> scan.theknowai.com</span>
       </Link>
     </div>
   </div>
