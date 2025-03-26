@@ -3,7 +3,6 @@ import { CtaSection } from "@/components/cta-section"
 import { FeatureSection } from "@/components/feature-section"
 import { FeedbackSection } from "@/components/feedback-section"
 import { ProjectSection } from "@/components/project-section"
-import { Footer } from "@/components/footer"
 import HeroSection from "@/components/HeroSection"
 import { LoadingScreen } from "@/components/LoadingScreen"
 import { useProfile } from "@/context/ProfileContext"
@@ -57,7 +56,6 @@ export default function Home() {
         <CtaSection />
       </section>
       
-      <Footer />
     </main>
   )
 }

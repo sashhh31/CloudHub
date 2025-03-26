@@ -1,15 +1,14 @@
 "use client"
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 // Define types for your profile data
 export interface ProfileData {
   analysis: string;
 }
 
-// Modified type to include "processing" as a possible value
 interface ProfileContextType {
   profileData: ProfileData | null;
-  setProfileData: (data: ProfileData ) => void; // Accept "processing" string too
+  setProfileData: (data: ProfileData) => void;
   clearProfileData: () => void;
 }
 
@@ -28,16 +27,33 @@ interface ProfileProviderProps {
 }
 
 export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) => {
-  // Changed state type to match context type
-  const [profileData, setProfileDataState] = useState<ProfileData | null>(null);
+  // Initialize state from localStorage if available
+  const [profileData, setProfileDataState] = useState<ProfileData | null>(() => {
+    if (typeof window !== 'undefined') {
+      const savedProfile = localStorage.getItem('profileData');
+      return savedProfile ? JSON.parse(savedProfile) : null;
+    }
+    return null;
+  });
 
-  // Updated to accept the processing string
-  const setProfileData = (data: ProfileData ) => {
+  // Update localStorage whenever profileData changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (profileData) {
+        localStorage.setItem('profileData', JSON.stringify(profileData));
+      } else {
+        localStorage.removeItem('profileData');
+      }
+    }
+  }, [profileData]);
+
+  const setProfileData = (data: ProfileData) => {
     setProfileDataState(data);
   };
 
   const clearProfileData = () => {
     setProfileDataState(null);
+    // This will trigger the useEffect to remove from localStorage
   };
 
   return (

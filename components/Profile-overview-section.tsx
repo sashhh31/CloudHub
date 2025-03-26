@@ -23,6 +23,7 @@ import { sendEmail } from "@/lib/resend"
 
 export function ProfileOverviewSection() {
   const [showQuestionnaireDialog, setShowQuestionnaireDialog] = useState(0);
+  const [imagelink,setImagelink]=useState('')
   const { profileData } = useProfile();
   const message = profileData?.analysis || '';
   const rightProfileRef = useRef(null);
@@ -104,23 +105,54 @@ export function ProfileOverviewSection() {
     }
   });
 
+
+  const download = async () => {
+    if (rightProfileRef.current) {
+      await document.fonts.ready; // Ensure fonts are loaded
+  
+      const canvas = await html2canvas(rightProfileRef.current, {
+        scale: 3, // Higher scale for better quality
+        backgroundColor: null,
+        useCORS: true,
+        logging: true, // Debugging info
+      });
+  
+      const image = canvas.toDataURL("image/png"); // Convert canvas to Base64
+  
+      // Send image to backend for storage
+     const response= await axios.post("/api/save-image",  JSON.stringify({ image , name:name }) 
+      );
+      setImagelink(response.data)
+    }
+  };
+  
   // Function to download the right profile as an image
   const downloadProfileImage = async () => {
     if (rightProfileRef.current) {
       try {
+        // Apply temporary desktop styles
+        rightProfileRef.current.style.width = "500px"; // Set desktop width
+        rightProfileRef.current.style.transform = "scale(1)";
+        rightProfileRef.current.style.zoom = "1";
+        
         await document.fonts.ready; // Ensure fonts are loaded
-
+  
         const canvas = await html2canvas(rightProfileRef.current, {
-          scale: 1, // Higher scale for better quality
+          scale: 3, // Higher scale for better quality
           backgroundColor: null,
           useCORS: true,
           logging: true, // Debugging info
         });
-
+  
+        // Reset styles after capturing
+        rightProfileRef.current.style.width = "";
+        rightProfileRef.current.style.transform = "";
+        rightProfileRef.current.style.zoom = "";
+  
         const image = canvas.toDataURL("image/png");
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = image;
-        link.download = `${name.replace(/\s+/g, '_')}_profile.png`;
+        link.download = `${name.replace(/\s+/g, "_")}_profile.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -130,6 +162,7 @@ export function ProfileOverviewSection() {
       }
     }
   };
+  
 
   // Function to share profile on LinkedIn
   const shareOnLinkedIn = async () => {
@@ -173,7 +206,6 @@ export function ProfileOverviewSection() {
     useEffect(() => {
       if (!open && showQuestionnaireDialog > 0) {
         // Dialog was open and now it's closed, trigger the download
-        downloadProfileImage();
         setShowQuestionnaireDialog(0); // Reset the state
       }
     }, [open]);
@@ -210,17 +242,18 @@ export function ProfileOverviewSection() {
       setSubmitted(true);
 
       
-      const questionnaire = await axios.post("/api/ai-questionnaire", {
+      await axios.post("/api/ai-questionnaire", {
         email,
         answers: answer,
       });
       setTimeout(() => {
-        setOpen(false);
         downloadProfileImage();
+        setOpen(false);
       }, 1000);
     };
+
     useEffect(() => {
-      sendEmail(email, name); 
+      sendEmail(email, name,imagelink); 
     }, [email, name]);
 
     return (
@@ -435,9 +468,12 @@ export function ProfileOverviewSection() {
           {/* Right Column - Profile Details with download & share buttons */}
           <div className="relative max-w-full mx-auto">
   {/* Action buttons - fixed position relative to card */}
-  <div className="absolute md:top-12 md:right-4 flex space-x-2 z-10">
+  <div className="absolute md:top-14 md:right-4 flex space-x-2 z-10">
     <button
-      onClick={() => setShowQuestionnaireDialog(1)}
+      onClick={() => {
+        setShowQuestionnaireDialog(1);
+        download();
+      }}
       className="flex items-center gap-1 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
     >
       <Download className="h-4 w-4" />
@@ -471,7 +507,7 @@ export function ProfileOverviewSection() {
           <div>{education[0].Institution || "University"}</div>
         </div>
         {currentAutomated && (
-          <div className="mt-10">
+          <div className="mt-5 md:mt-10">
             <h2 className="mb-4 text-lg font-semibold text-gray-400">Current AI exposure</h2>
             <div className="rounded-lg">
               <ul className="list-disc space-y-2 md:space-y-4 font-semibold text-gray-900 ">
@@ -494,7 +530,7 @@ export function ProfileOverviewSection() {
       </div>
       
       {/* Right column - skills and superpowers */}
-      <div className="mt-4 md:mt-11">
+      <div className="mt-2 md:mt-11">
         {superpowers && (
           <div>
             <h2 className="mb-4 text-lg font-semibold text-gray-400">Superpowers</h2>
@@ -506,7 +542,7 @@ export function ProfileOverviewSection() {
           </div>
         )}
         
-        <div className="text-lg font-medium text-gray-400 mt-8">Top Skills</div>
+        <div className="text-lg font-medium text-gray-400 mt-4 md:mt-8">Top Skills</div>
         <div className="mt-3">
           {topSkills.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -525,7 +561,7 @@ export function ProfileOverviewSection() {
     </div>
     
     {/* Achievements section */}
-    <div className="px-6 pt-6 pb-4">
+    <div className="px-6 pt-3 md:pt-6 pb-4">
       <h2 className="mb-4 text-lg font-semibold text-gray-400">Best Achievements</h2>
       <div className="rounded-lg">
         <div className="space-y-2 font-semibold text-black">
@@ -536,7 +572,7 @@ export function ProfileOverviewSection() {
     
     {/* Tools section */}
     <div className="px-6 pb-6">
-      <div className="mb-4 text-lg font-semibold text-gray-400">Tools</div>
+      <div className="mb-2 md:mb-4 text-lg font-semibold text-gray-400">Tools</div>
       <div className="mt-2 flex flex-wrap gap-y-2 gap-x-4">
         {tools.slice(0, 10).map((skill:any, i:number) => (
           <div key={i} className="rounded font-semibold text-gray-900 py-1">
@@ -547,9 +583,9 @@ export function ProfileOverviewSection() {
     </div>
     
     {/* Footer */}
-    <div className="text-center px-6 pb-6">
+    <div className="text-center px-6 pb-3 md:pb-6">
       Get your profile analysis at
-      <Link href="https://scan.knowai.com">
+      <Link href="https://scan.theknowai.com/">
         <span className="font-bold"> scan.knowai.com</span>
       </Link>
     </div>

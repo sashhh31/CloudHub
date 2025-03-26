@@ -20,10 +20,6 @@ const HeroSection = () => {
             Backed by research from leading institutions
           </h2>
         </div>
-        
-        <h1 className="text-gray-900 text-xl font-semibold z-10 order-2 md:order-3">
-          McKinsey, Harvard
-        </h1>
       </div>
 
       {/* Main Content Section */}
